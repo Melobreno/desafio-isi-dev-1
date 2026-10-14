@@ -1,0 +1,18 @@
+package com.github.melobreno.backend.dto;
+
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+public record PartidaDto(
+        Long id,
+        OffsetDateTime playedAt,
+        PartidaClubeDto home,
+        PartidaClubeDto away,
+        String result,
+        List<DueloPartidaDto> duels
+) {
+}
