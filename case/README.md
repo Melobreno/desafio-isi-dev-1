@@ -26,7 +26,7 @@ Os exemplos de cada seção usam nomes e valores fictícios e **não fazem parte
 
 ## ✅ O que esperamos ver no seu projeto
 
-- Organização do projeto com **estrutura clara e lógica** (pastas `frontend/` e `backend/`, conforme o regulamento)
+- Organização do projeto com **estrutura clara e lógica** (pastas `../frontend` e `backend/`, conforme o regulamento)
 - Uma **aplicação funcional** que percorra o fluxo completo: jogadores → clubes → compra com contrato → venda → histórico → escalação → partidas e classificação
 - **Regras de negócio aplicadas exatamente como descritas**, inclusive nos casos-limite, nos percentuais e nos arredondamentos
 - **Padrões de código limpo** (clean code) seguidos no backend e no frontend: nomes claros e no padrão da linguagem, funções e componentes com uma só responsabilidade, camadas separadas, regras de negócio sem duplicação, tratamento de erros centralizado e nenhum código morto ou comentado. A qualidade do código é avaliada pelos critérios B2 e F2 do [barema](barema.md)
@@ -1456,7 +1456,7 @@ Não são obrigatórios; somam pontos no critério F5 do [barema](barema.md), at
 
 🔗 Mockup de referência no Figma, versão **v1.0**: https://www.figma.com/design/oevjrS0eaqL3VHSvKYB8GS/Passe
 
-[![Tela inicial do mockup no Figma](docs/mockup-tela-inicial.png)](https://www.figma.com/design/oevjrS0eaqL3VHSvKYB8GS/Passe)
+[![Tela inicial do mockup no Figma](../docs/mockup-tela-inicial.png)](https://www.figma.com/design/oevjrS0eaqL3VHSvKYB8GS/Passe)
 
 A imagem mostra a tela inicial e também abre o mockup. No arquivo, as telas desktop estão na página “Telas · Desktop”, as de 375 px (diferencial de responsividade) em “Telas · Mobile”, e os componentes em “Sistema de design”.
 
@@ -1466,7 +1466,7 @@ O mockup orienta o fluxo e a disposição das telas; em caso de diferença, vale
 
 ## 📘 Requisitos do README.md
 
-O `README.md` da raiz do repositório deve conter, cada um em trecho próprio (item 3.3.4 do regulamento); ele pode apontar para READMEs dentro de `backend/` e `frontend/`:
+O `README.md` da raiz do repositório deve conter, cada um em trecho próprio (item 3.3.4 do regulamento); ele pode apontar para READMEs dentro de `../backend` e `frontend/`:
 
 1. **Pré-requisitos**, com nome e versão de cada ferramenta (ex.: Node.js 22, Java 21, Python 3.12, PostgreSQL 16). A banca instala só os runtimes e os gerenciadores oficiais (Node.js com npm, Java com Maven ou Gradle, Python com pip); o banco e as demais ferramentas são instalados ou iniciados pelos comandos do item 3
 2. **Passo a passo para criar o banco de dados e para recriá-lo do zero** (apagar e criar de novo), por migrations ou script versionado no repositório. O banco criado por esses passos começa vazio, sem jogadores, clubes, transações nem partidas; dados de exemplo, se houver, só por comando separado e opcional
@@ -1519,7 +1519,7 @@ Se não conseguir concluir tudo, **entregue o que foi feito**.
 A entrega segue o item 3.2 do regulamento. As situações que eliminam o candidato estão na seção 2 do [barema](barema.md).
 
 1. **Prazo:** 10 dias corridos, até as **20h (horário de Brasília) de sexta-feira, 23/10/2026**.
-2. **Repositório:** um único repositório Git **público** (GitHub ou GitLab), com as pastas `frontend/` e `backend/` na raiz. Ele pode ficar privado durante o desenvolvimento, mas precisa estar público, com o commit informado num branch ou tag, às 12h (horário de Brasília) do dia útil seguinte ao fim do prazo (segunda-feira, 26/10/2026), quando a banca começa a cópia (se ela falhar, valem as novas tentativas da seção 3.1 do barema), e continuar público, sem alteração de histórico, até a divulgação do resultado do estudo de caso. Para proteger seus dados, use nos commits o e-mail privado (noreply) da plataforma. Faça envios (push) ao longo do desenvolvimento: o histórico do Git conta os dias de envio até o fim do prazo (barema, B4 e F4), e commits reescritos com envio forçado contam só no dia desse envio.
+2. **Repositório:** um único repositório Git **público** (GitHub ou GitLab), com as pastas `../frontend` e `backend/` na raiz. Ele pode ficar privado durante o desenvolvimento, mas precisa estar público, com o commit informado num branch ou tag, às 12h (horário de Brasília) do dia útil seguinte ao fim do prazo (segunda-feira, 26/10/2026), quando a banca começa a cópia (se ela falhar, valem as novas tentativas da seção 3.1 do barema), e continuar público, sem alteração de histórico, até a divulgação do resultado do estudo de caso. Para proteger seus dados, use nos commits o e-mail privado (noreply) da plataforma. Faça envios (push) ao longo do desenvolvimento: o histórico do Git conta os dias de envio até o fim do prazo (barema, B4 e F4), e commits reescritos com envio forçado contam só no dia desse envio.
 3. **E-mail:**
    - **De:** o e-mail em que você recebe as comunicações do RH sobre esta vaga; e-mail enviado de outro endereço é desconsiderado
    - **Para:** `igor.conde@sistemafiepe.org.br`

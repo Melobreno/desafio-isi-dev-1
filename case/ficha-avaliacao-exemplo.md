@@ -77,7 +77,7 @@ Este documento mostra como fica a ficha de avaliação de um candidato ao fim de
 | 1 | E-mail de entrega depois do prazo | recebido em 03/12/2026, às 19h47, antes das 20h (lista de entregas do RH) | não ocorreu |
 | 2 | Repositório inacessível sem login | `git ls-remote` e `git clone --mirror` sem credenciais, na primeira tentativa | não ocorreu |
 | 3 | Hash ausente ou inalcançável | hash completo, alcançável a partir do branch `main` (`git merge-base --is-ancestor`) | não ocorreu |
-| 4 | Commit sem `frontend/` e `backend/` na raiz | as duas pastas estão na raiz do commit | não ocorreu |
+| 4 | Commit sem `../frontend` e `backend/` na raiz | as duas pastas estão na raiz do commit | não ocorreu |
 | 5 | Tecnologia fora da stack obrigatória | NestJS com TypeScript e Node.js 22; React com Vite; PostgreSQL em contêiner | não ocorreu |
 | 6 | Cópia de outro candidato | maior similaridade com outro projeto: 14%, abaixo do limite registrado em ata; nenhum par analisado | não ocorreu |
 
@@ -86,7 +86,7 @@ O projeto segue para a correção completa.
 ## 5. Preparação do ambiente (barema, seção 3.2)
 
 - **Runtimes instalados pela banca:** Node.js 22 com npm, conforme o item 1 do README do candidato (versão exata na ata). O Docker já faz parte da imagem da máquina virtual.
-- **Comandos executados:** copiados literalmente do README da raiz e dos READMEs de `backend/` e `frontend/`, na ordem indicada.
+- **Comandos executados:** copiados literalmente do README da raiz e dos READMEs de `../backend` e `frontend/`, na ordem indicada.
 
 | # | Início | Comando | Resultado |
 | --- | --- | --- | --- |
@@ -385,7 +385,7 @@ Itens do README conferidos (1 e 3 a 8; o item 2 conta só em B3):
 | 8. Uso de inteligência artificial | correto | ferramentas, onde, como e por quê, e o que foi aceito, alterado ou descartado |
 
 - **README do backend:** 1 item incorreto, o 4. Fica em "atende em parte".
-- **Histórico do Git:** 34 commits alteram `backend/`, todos dentro do prazo, e foram enviados (push) em 7 dias diferentes: 24/11, 25/11, 26/11, 28/11, 30/11, 01/12 e 03/12. Só 4 das 34 mensagens são genéricas ("fix", "ajustes", "wip" e "update"), menos da metade.
+- **Histórico do Git:** 34 commits alteram `../backend`, todos dentro do prazo, e foram enviados (push) em 7 dias diferentes: 24/11, 25/11, 26/11, 28/11, 30/11, 01/12 e 03/12. Só 4 das 34 mensagens são genéricas ("fix", "ajustes", "wip" e "update"), menos da metade.
 
 ### B5. Diferenciais técnicos do backend: 2 de 2
 
@@ -514,7 +514,7 @@ Sessão gravada de 09/12/2026, das 11:30 às 12:05: banco recriado, rede desacel
 | **Total** | | **1 de 2** |
 
 - **README do frontend:** os itens 1, 3 e 4 estão corretos; o item 4 informa a variável com a origem da API, que está no `.env.example` do frontend. O item 5 está incorreto: a lista de bibliotecas não traz a `dayjs`, que está nas dependências do frontend e só aparece em "Decisões e premissas". Com 1 item incorreto, fica em "atende em parte".
-- **Histórico do Git:** 21 commits alteram `frontend/`, mas foram enviados (push) em só 2 dias, 02/12 e 03/12. Por ter envios em menos de 3 dias, fica em "atende em parte". Só 3 das 21 mensagens são genéricas.
+- **Histórico do Git:** 21 commits alteram `../frontend`, mas foram enviados (push) em só 2 dias, 02/12 e 03/12. Por ter envios em menos de 3 dias, fica em "atende em parte". Só 3 das 21 mensagens são genéricas.
 
 ### F5. Diferenciais de interface: 2 de 2
 
