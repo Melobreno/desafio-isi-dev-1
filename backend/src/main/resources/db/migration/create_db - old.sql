@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `clubes` (
+/*CREATE TABLE IF NOT EXISTS `clubes` (
                                         `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
                                         `nome` VARCHAR(60) NOT NULL UNIQUE,
     `sigla` CHAR(3) NOT NULL UNIQUE,
@@ -108,4 +108,4 @@ CREATE TABLE IF NOT EXISTS `duelos_partida` (
     CONSTRAINT `fk_duelos_clubes` FOREIGN KEY (`clube_atacante_id`) REFERENCES `clubes` (`id`),
     CONSTRAINT `fk_duelos_atacantes` FOREIGN KEY (`atacante_id`) REFERENCES `jogadores` (`id`),
     CONSTRAINT `fk_duelos_defensores` FOREIGN KEY (`defensor_id`) REFERENCES `jogadores` (`id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; */
