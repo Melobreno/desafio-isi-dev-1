@@ -2,6 +2,8 @@ package com.github.melobreno.backend.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,8 +32,9 @@ public class Jogador {
     @Column(nullable = false, length = 100)
     private String nome;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 3)
-    private String posicao;
+    private PosicaoJogador posicao;
 
     @Column(nullable = false)
     private Integer agilidade;
@@ -42,8 +45,9 @@ public class Jogador {
     @Column(name = "valor_base", nullable = false, precision = 6, scale = 2)
     private BigDecimal valorBase;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String condicao;
+    private CondicaoJogador condicao;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "clube_id")
