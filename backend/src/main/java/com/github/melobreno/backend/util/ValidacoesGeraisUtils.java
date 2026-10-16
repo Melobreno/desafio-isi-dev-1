@@ -1,6 +1,8 @@
 package com.github.melobreno.backend.util;
 
-import org.apache.coyote.BadRequestException;
+import com.github.melobreno.backend.exceptions.BadRequestException;
+import com.github.melobreno.backend.exceptions.BusinessException;
+import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.time.DateTimeException;
@@ -28,6 +30,10 @@ public final class ValidacoesGeraisUtils {
             .toFormatter()
             .withResolverStyle(ResolverStyle.STRICT);
 
+    /**
+     * RN01 - Interpreta estritamente a data e hora local no formato da API
+     * e associa o offset fixo de Brasília (-03:00).
+     */
     private static OffsetDateTime parse(String valor) {
         return LocalDateTime.parse(valor, formatter).atOffset(ZoneOffset.ofHours(-3));
     }
@@ -37,9 +43,8 @@ public final class ValidacoesGeraisUtils {
      *
      * @param localDate data no formato uuuu-MM-dd'T'HH:mm-03:00
      * @return OffsetDateTime
-     * @throws BadRequestException
      */
-    public static OffsetDateTime validarDateTime(String localDate) throws BadRequestException {
+    public static OffsetDateTime validarDateTime(String localDate) {
         if (localDate == null || localDate.isEmpty()) {
             throw new BadRequestException("O campo de data e hora é obrigatório.");
         }
@@ -49,22 +54,25 @@ public final class ValidacoesGeraisUtils {
         try {
             return parse(localDate);
         } catch (DateTimeException exception) {
-            throw new BadRequestException("Data e hora inválidos.");
+            throw new BadRequestException("Data e hora inválidos.", exception);
         }
     }
 
+    /**
+     * RN01 - Obtém o instante atual com offset -03:00 e precisão de segundos.
+     */
     public static OffsetDateTime agoraBrasilia() {
         return OffsetDateTime.now(ZoneOffset.ofHours(-3)).withNano(0);
     }
 
     /**
-     * RN05 - Valida se o valor recebido é "true" ou "false" (case sensitive).
+     * RN07 - Valida o parâmetro booleano da listagem: aceita apenas "true"
+     * ou "false", respeitando maiúsculas e minúsculas.
      * @param valRecebito
      * @param valEsperado
      * @return
-     * @throws BadRequestException
      */
-    public static boolean validaBooleanoCase(String valRecebito , String valEsperado) throws BadRequestException{
+    public static boolean validaBooleanoCase(String valRecebito , String valEsperado) {
         if ("true".equals(valEsperado)) return true;
         if ("false".equals(valEsperado)) return false;
         throw new BadRequestException("O parâmetro " + valRecebito + " deve ser true ou false.");
@@ -74,41 +82,40 @@ public final class ValidacoesGeraisUtils {
      * V05 | V08
      * @param esperado
      * @return
-     * @throws BadRequestException
      */
-    public static int idUrl(String esperado) throws BadRequestException {
-        Integer id = lerInteiro(esperado);
-        if (id == null) {
-            throw new BadRequestException("Recurso não encontrado.");
+    public static Integer idUrl(String esperado) {
+        if (esperado == null || !INTEIRO_POSITIVO.matcher(esperado).matches()) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "Jogador não encontrado.");
         }
-        return id;
+        try {
+            return Integer.parseInt(esperado);
+        } catch (NumberFormatException exception) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "Jogador não encontrado.", exception);
+        }
     }
 
-    private static Integer lerInteiro(String esperado) {
-        if (esperado == null || esperado.length() > 10 || !INTEIRO_POSITIVO.matcher(esperado).matches()){
-            return null;
+    public static int inteiroPositivo(String nome, String esperado) {
+        if (esperado == null || esperado.length() > 10
+                || !INTEIRO_POSITIVO.matcher(esperado).matches()) {
+            throw new BadRequestException("O parâmetro " + nome + " deve ser um inteiro positivo.");
         }
-        long valor = Long.parseLong(esperado);
-        return valor <= Integer.MAX_VALUE ? (int) valor : null;
+        try {
+            return Integer.parseInt(esperado);
+        } catch (NumberFormatException exception) {
+            throw new BadRequestException("O parâmetro " + nome + " deve ser um inteiro positivo.", exception);
+        }
     }
 
-    public static int inteiroPositivo(String nome, String esperado) throws BadRequestException {
-        Integer valor = lerInteiro(esperado);
-        if (valor == null) {
-            throw new BadRequestException("O parâmetro " + nome + " deve ser um inteiro positivo (ex.: 1, 25).");
-        }
-        return valor;
-    }
-
-    public static int inteiroNaFaixa(String nome, String esperado, int min, int max) throws BadRequestException {
+    public static int inteiroNaFaixa(String nome, String esperado, int min, int max) {
         int valor = inteiroPositivo(nome, esperado);
         if (valor < min || valor > max) {
-            throw new BadRequestException("O parâmetro " + nome + " deve estar entre " + min + " e " + max + ".");
+            throw new BadRequestException(
+                    "O parâmetro " + nome + " deve estar entre " + min + " e " + max + ".");
         }
         return valor;
     }
 
-    public static BigDecimal ValidaDecimal(String nome, String esperado, BigDecimal min, BigDecimal max) throws BadRequestException {
+    public static BigDecimal validaDecimal(String nome, String esperado, BigDecimal min, BigDecimal max) {
         if (esperado == null || !DECIMAL.matcher(esperado).matches()) {
             throw new BadRequestException("O parâmetro " + nome + " deve ser decimal com até 2 casas (ex.: 10.55).");
         }
@@ -126,9 +133,8 @@ public final class ValidacoesGeraisUtils {
      * @param esperado
      * @return
      * @param <E>
-     * @throws BadRequestException
      */
-    public static <E extends Enum<E>> E validaEnum(String nome, Class<E> tipo, String esperado) throws BadRequestException {
+    public static <E extends Enum<E>> E validaEnum(String nome, Class<E> tipo, String esperado) {
         if (esperado != null) {
             for (E valor : tipo.getEnumConstants()) {
                 if (valor.name().equals(esperado)) {
