@@ -8,9 +8,9 @@ import java.time.OffsetDateTime;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record TransacaoDto(
-        Long id,
-        Long clubId,
-        Long playerId,
+        Integer id,
+        Integer clubId,
+        Integer playerId,
         String playerName,
         String type,
         BigDecimal value,

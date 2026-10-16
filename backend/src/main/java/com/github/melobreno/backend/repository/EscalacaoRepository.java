@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface EscalacaoRepository extends JpaRepository<Escalacao, EscalacaoId> {
 
-    List<Escalacao> findAllById_ClubeIdOrderByCriadoEmAsc(Long clubeId);
+    List<Escalacao> findAllById_ClubeIdOrderByCriadoEmAsc(Integer clubeId);
 
-    boolean existsByJogador_Id(Long jogadorId);
+    boolean existsByJogador_Id(Integer jogadorId);
 
-    void deleteAllById_ClubeId(Long clubeId);
+    void deleteAllById_ClubeId(Integer clubeId);
 }

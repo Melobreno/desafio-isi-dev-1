@@ -6,5 +6,5 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public record AtualizarEscalacaoRequestDto(String formation, List<Long> playerIds) {
+public record AtualizarEscalacaoRequestDto(String formation, List<Integer> playerIds) {
 }

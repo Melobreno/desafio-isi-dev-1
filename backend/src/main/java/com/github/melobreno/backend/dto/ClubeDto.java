@@ -8,7 +8,7 @@ import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record ClubeDto(
-        Long id,
+        Integer id,
         String name,
         String acronym,
         BigDecimal cash,

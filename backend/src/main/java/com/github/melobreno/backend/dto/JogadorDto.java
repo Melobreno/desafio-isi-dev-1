@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record JogadorDto(
-        Long id,
+        Integer id,
         String name,
         String position,
         Integer agility,
@@ -23,6 +23,6 @@ public record JogadorDto(
         Integer physical,
         Integer potential,
         Integer overall,
-        Long clubId
+        Integer clubId
 ) {
 }

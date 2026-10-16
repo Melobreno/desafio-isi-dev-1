@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface DueloPartidaRepository extends JpaRepository<DueloPartida, Long> {
+public interface DueloPartidaRepository extends JpaRepository<DueloPartida, Integer> {
 
-    List<DueloPartida> findAllByPartida_IdOrderByOrdemAsc(Long partidaId);
+    List<DueloPartida> findAllByPartida_IdOrderByOrdemAsc(Integer partidaId);
 }

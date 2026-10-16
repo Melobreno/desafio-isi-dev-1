@@ -8,7 +8,7 @@ import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record PartidaDto(
-        Long id,
+        Integer id,
         OffsetDateTime playedAt,
         PartidaClubeDto home,
         PartidaClubeDto away,

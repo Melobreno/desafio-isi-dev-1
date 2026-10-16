@@ -6,5 +6,5 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import java.time.OffsetDateTime;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public record ComprarJogadorRequestDto(Long clubId, OffsetDateTime loyaltyUntil) {
+public record ComprarJogadorRequestDto(Integer clubId, OffsetDateTime loyaltyUntil) {
 }

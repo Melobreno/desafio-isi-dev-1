@@ -7,7 +7,7 @@ import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record EscalacaoDto(
-        Long clubId,
+        Integer clubId,
         String formation,
         Boolean complete,
         List<JogadorDto> players

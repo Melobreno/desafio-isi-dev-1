@@ -3,7 +3,7 @@ package com.github.melobreno.backend.repository;
 import com.github.melobreno.backend.model.Clube;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ClubeRepository extends JpaRepository<Clube, Long> {
+public interface ClubeRepository extends JpaRepository<Clube, Integer> {
 
     boolean existsByNomeIgnoreCase(String nome);
 

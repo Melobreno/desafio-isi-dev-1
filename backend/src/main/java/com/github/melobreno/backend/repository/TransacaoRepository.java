@@ -5,17 +5,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
+public interface TransacaoRepository extends JpaRepository<Transacao, Integer> {
 
-    List<Transacao> findAllByClube_IdOrderByCriadoEmDescIdDesc(Long clubeId);
+    List<Transacao> findAllByClube_IdOrderByCriadoEmDescIdDesc(Integer clubeId);
 
-    List<Transacao> findAllByClube_IdAndTipoOrderByCriadoEmDescIdDesc(Long clubeId, String tipo);
+    List<Transacao> findAllByClube_IdAndTipoOrderByCriadoEmDescIdDesc(Integer clubeId, String tipo);
 
-    List<Transacao> findAllByClube_IdAndJogador_IdOrderByCriadoEmDescIdDesc(Long clubeId, Long jogadorId);
+    List<Transacao> findAllByClube_IdAndJogador_IdOrderByCriadoEmDescIdDesc(Integer clubeId, Integer jogadorId);
 
     List<Transacao> findAllByClube_IdAndTipoAndJogador_IdOrderByCriadoEmDescIdDesc(
-            Long clubeId,
+            Integer clubeId,
             String tipo,
-            Long jogadorId
+            Integer jogadorId
     );
 }

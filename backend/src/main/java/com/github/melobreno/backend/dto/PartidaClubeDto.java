@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record PartidaClubeDto(
-        Long clubId,
+        Integer clubId,
         String clubName,
         String formation,
         Integer goals
