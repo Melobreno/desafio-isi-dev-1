@@ -25,7 +25,7 @@ public class Clube {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(nullable = false, length = 60, unique = true)
     private String nome;

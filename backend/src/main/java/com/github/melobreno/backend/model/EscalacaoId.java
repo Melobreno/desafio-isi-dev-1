@@ -19,8 +19,8 @@ import java.io.Serializable;
 public class EscalacaoId implements Serializable {
 
     @Column(name = "clube_id", nullable = false)
-    private Long clubeId;
+    private Integer clubeId;
 
     @Column(name = "jogador_id", nullable = false)
-    private Long jogadorId;
+    private Integer jogadorId;
 }
