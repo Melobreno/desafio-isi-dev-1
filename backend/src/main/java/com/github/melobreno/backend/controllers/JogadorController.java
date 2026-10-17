@@ -33,6 +33,7 @@ import java.net.URI;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/v1/players")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Jogadores", description = "Operações relacionadas a cadastro, consulta, listagem paginada, edição e exclusão lógica de jogadores")
 public class JogadorController {
 
     private final JogadorService jogadorService;

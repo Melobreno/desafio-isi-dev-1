@@ -26,6 +26,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/clubs")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Clubes", description = "Operações relacionadas a criação, listagem e consulta detalhada de clubes e elencos")
 public class ClubeController {
 
     private final ClubeServices clubeServices;
@@ -33,6 +34,7 @@ public class ClubeController {
     @PostMapping
     @Operation(
             summary = "Cadastra um clube",
+            description = "Cadastra um novo clube com 300,00 de caixa inicial. Valida nome único, sigla de 3 letras e limite de 20 clubes.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     content = @Content(
@@ -51,7 +53,8 @@ public class ClubeController {
             )
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Clube criado com sucesso"),
+            @ApiResponse(responseCode = "201", description = "Clube criado com sucesso",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ClubeDto.class))),
             @ApiResponse(responseCode = "400", description = "Dados do clube inválidos"),
             @ApiResponse(responseCode = "409", description = "Conflito de unicidade de nome ou sigla, ou limite de clubes atingido")
     })
@@ -62,22 +65,34 @@ public class ClubeController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista todos os clubes")
+    @Operation(
+            summary = "Lista todos os clubes",
+            description = "Retorna a lista de clubes cadastrados com caixa, valor do elenco e patrimônio calculados, sem o elenco."
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista de clubes"),
+            @ApiResponse(responseCode = "200", description = "Lista de clubes retornada com sucesso",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ClubeDto.class))),
             @ApiResponse(responseCode = "400", description = "Parâmetro sort inválido")
     })
-    public ResponseEntity<List<ClubeDto>> listarClubes(@RequestParam(required = false) String sort) {
+    public ResponseEntity<List<ClubeDto>> listarClubes(
+            @io.swagger.v3.oas.annotations.Parameter(description = "Critério de ordenação: name (padrão), net_worth_asc ou net_worth_desc", example = "name")
+            @RequestParam(required = false) String sort) {
         return ResponseEntity.ok(clubeServices.listarClubes(sort));
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Busca detalhes de um clube e seu elenco")
+    @Operation(
+            summary = "Busca detalhes de um clube e seu elenco",
+            description = "Retorna os detalhes de um clube com seu elenco ordenado por posição (GOL, ZAG, LAT, MEI, ATA), nome e ID, com os contratos ativos de cada atleta."
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Detalhes do clube"),
+            @ApiResponse(responseCode = "200", description = "Detalhes do clube retornados com sucesso",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ClubeDto.class))),
             @ApiResponse(responseCode = "404", description = "Clube não encontrado")
     })
-    public ResponseEntity<ClubeDto> buscarClube(@PathVariable String id) {
+    public ResponseEntity<ClubeDto> buscarClube(
+            @io.swagger.v3.oas.annotations.Parameter(description = "ID do clube", example = "1")
+            @PathVariable String id) {
         return ResponseEntity.ok(clubeServices.buscaClube(ValidacoesGeraisUtils.idUrl(id)));
     }
 }
