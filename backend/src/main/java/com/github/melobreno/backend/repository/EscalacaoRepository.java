@@ -13,4 +13,6 @@ public interface EscalacaoRepository extends JpaRepository<Escalacao, EscalacaoI
     boolean existsByJogador_Id(Integer jogadorId);
 
     void deleteAllById_ClubeId(Integer clubeId);
+
+    void deleteById_JogadorId(Integer jogadorId);
 }
