@@ -6,11 +6,9 @@ import com.github.melobreno.backend.dto.CriarPartidaRequestDto;
 import com.github.melobreno.backend.dto.EscalacaoDto;
 import com.github.melobreno.backend.dto.JogadorDto;
 import com.github.melobreno.backend.dto.PartidaDto;
-import com.github.melobreno.backend.exceptions.BadRequestException;
 import com.github.melobreno.backend.exceptions.BusinessException;
 import com.github.melobreno.backend.model.Clube;
 import com.github.melobreno.backend.model.CondicaoJogador;
-import com.github.melobreno.backend.model.DueloPartida;
 import com.github.melobreno.backend.model.Escalacao;
 import com.github.melobreno.backend.model.EscalacaoId;
 import com.github.melobreno.backend.model.Jogador;
@@ -132,7 +130,7 @@ class LigaServiceTest {
 
         AtualizarEscalacaoRequestDto request = new AtualizarEscalacaoRequestDto("2-1-1", List.of(30, 31, 32, 33, 34));
         BusinessException ex = assertThrows(BusinessException.class, () -> ligaService.atualizarEscalacao(1, request));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
         assertTrue(ex.getMessage().contains("não pertence ao elenco"));
     }
 
@@ -156,7 +154,7 @@ class LigaServiceTest {
 
         AtualizarEscalacaoRequestDto request = new AtualizarEscalacaoRequestDto("2-1-1", List.of(30, 31, 32, 33, 34));
         BusinessException ex = assertThrows(BusinessException.class, () -> ligaService.atualizarEscalacao(1, request));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
         assertTrue(ex.getMessage().contains("está DOENTE"));
     }
 
@@ -181,7 +179,7 @@ class LigaServiceTest {
 
         AtualizarEscalacaoRequestDto request = new AtualizarEscalacaoRequestDto("2-1-1", List.of(30, 31, 32, 33, 34));
         BusinessException ex = assertThrows(BusinessException.class, () -> ligaService.atualizarEscalacao(1, request));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
         assertTrue(ex.getMessage().contains("não atendem à formação"));
     }
 
@@ -269,8 +267,8 @@ class LigaServiceTest {
         assertEquals(6, partida.duels().size());
 
         // Duelo 1: Otto Rangel (ATA finalização 75) vs Ivo Teles (GOL defesa 72) -> gol = true
-        assertTrue(partida.duels().get(0).goal());
-        assertEquals("shooting", partida.duels().get(0).attacker().attribute());
+        assertTrue(partida.duels().getFirst().goal());
+        assertEquals("shooting", partida.duels().getFirst().attacker().attribute());
         assertEquals(75, partida.duels().get(0).attacker().value());
         assertEquals(72, partida.duels().get(0).defender().value());
 
@@ -335,7 +333,7 @@ class LigaServiceTest {
         assertEquals(6, standings.size());
 
         // 1º Gama SC
-        assertEquals(1, standings.get(0).position());
+        assertEquals(1, standings.getFirst().position());
         assertEquals("Gama SC", standings.get(0).clubName());
         assertEquals(6, standings.get(0).points());
 
