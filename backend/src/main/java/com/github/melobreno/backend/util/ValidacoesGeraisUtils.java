@@ -127,7 +127,66 @@ public final class ValidacoesGeraisUtils {
     }
 
     /**
-     * V05 -Valida se o valor recebido é um dos valores válidos de um enum.
+     * V04 - Remove espaços nas pontas, reduz múltiplos espaços U+0020 a um só,
+     * rejeita caracteres de controle com 400 e trata texto em branco como ausente.
+     */
+    public static String aplicarV4(String texto, String nomeCampo) {
+        if (texto == null) {
+            throw new BadRequestException("O campo " + nomeCampo + " é obrigatório.");
+        }
+        if (texto.codePoints().anyMatch(Character::isISOControl)) {
+            throw new BadRequestException("O campo " + nomeCampo + " não pode conter caracteres de controle.");
+        }
+        String normalizado = texto.replaceAll("^ +| +$", "").replaceAll(" {2,}", " ");
+        if (normalizado.isEmpty()) {
+            throw new BadRequestException("O campo " + nomeCampo + " é obrigatório.");
+        }
+        return normalizado;
+    }
+
+    /**
+     * V04 - Aplica a regra V4 para o parâmetro de busca search.
+     * Se for vazio ou contiver apenas espaços ou caracteres de controle, é recusado com 400.
+     */
+    public static String aplicarV4Search(String search) {
+        if (search == null) {
+            return null;
+        }
+        if (search.codePoints().anyMatch(Character::isISOControl)) {
+            throw new BadRequestException("A busca não pode conter caracteres de controle.");
+        }
+        String normalizado = search.replaceAll("^ +| +$", "").replaceAll(" {2,}", " ");
+        if (normalizado.isEmpty()) {
+            throw new BadRequestException("O parâmetro search não pode ser vazio.");
+        }
+        return normalizado;
+    }
+
+    /**
+     * Decompõe o texto na forma NFD do Unicode e retira marcas de acento (categoria Mn),
+     * incluindo a cedilha.
+     */
+    public static String removerAcentos(String texto) {
+        if (texto == null) {
+            return null;
+        }
+        return java.text.Normalizer.normalize(texto, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+    }
+
+    /**
+     * Normaliza texto para a ordenação alfabética exigida no regulamento:
+     * sem acentos e em minúsculas, comparável caractere a caractere Unicode.
+     */
+    public static String normalizarParaOrdenacao(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        return removerAcentos(texto).toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /**
+     * V05 - Valida se o valor recebido é um dos valores válidos de um enum.
      * @param nome
      * @param tipo
      * @param esperado
