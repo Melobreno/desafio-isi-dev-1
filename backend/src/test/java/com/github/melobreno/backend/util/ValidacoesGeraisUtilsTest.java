@@ -60,4 +60,39 @@ class ValidacoesGeraisUtilsTest {
         assertThrows(BadRequestException.class,
                 () -> ValidacoesGeraisUtils.inteiroPositivo("page", "+42"));
     }
+
+    @Test
+    void regraV4RemoveEspacosNasPontasEReduzEspacosRepetidos() {
+        assertEquals("Meia Zeta", ValidacoesGeraisUtils.aplicarV4("  Meia   Zeta ", "name"));
+        assertEquals("Águias FC", ValidacoesGeraisUtils.aplicarV4("   Águias    FC   ", "name"));
+    }
+
+    @Test
+    void regraV4RejeitaCaracteresDeControleETexteVazio() {
+        assertThrows(BadRequestException.class,
+                () -> ValidacoesGeraisUtils.aplicarV4("Meia\tZeta", "name"));
+        assertThrows(BadRequestException.class,
+                () -> ValidacoesGeraisUtils.aplicarV4("Meia\nZeta", "name"));
+        assertThrows(BadRequestException.class,
+                () -> ValidacoesGeraisUtils.aplicarV4("   ", "name"));
+        assertThrows(BadRequestException.class,
+                () -> ValidacoesGeraisUtils.aplicarV4(null, "name"));
+    }
+
+    @Test
+    void regraV4SearchValidaTextoNormalizadoERejeitaVazio() {
+        assertEquals("lua", ValidacoesGeraisUtils.aplicarV4Search("  lua   "));
+        assertThrows(BadRequestException.class,
+                () -> ValidacoesGeraisUtils.aplicarV4Search("   "));
+        assertThrows(BadRequestException.class,
+                () -> ValidacoesGeraisUtils.aplicarV4Search("lua\t"));
+    }
+
+    @Test
+    void normalizacaoEOrdenacaoRespeitaOrdemUnicodeESemAcentos() {
+        assertEquals("aguias fc", ValidacoesGeraisUtils.normalizarParaOrdenacao("Águias FC"));
+        assertEquals("aguias fc", ValidacoesGeraisUtils.normalizarParaOrdenacao("Aguias FC"));
+        assertTrue(ValidacoesGeraisUtils.normalizarParaOrdenacao("Ana Lima")
+                .compareTo(ValidacoesGeraisUtils.normalizarParaOrdenacao("Ana-Maria")) < 0);
+    }
 }
