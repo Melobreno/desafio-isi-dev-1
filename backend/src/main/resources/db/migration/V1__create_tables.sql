@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS `clubes` (
-    id INT NOT NULL AUTO_INCREMENT,
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     nome VARCHAR(60) NOT NULL UNIQUE,
     sigla CHAR(3) NOT NULL UNIQUE,
     caixa DECIMAL(10,2) NOT NULL DEFAULT 300.00,
@@ -9,14 +9,14 @@ CREATE TABLE IF NOT EXISTS `clubes` (
 );
 
 CREATE TABLE IF NOT EXISTS `jogadores` (
-    id INT NOT NULL AUTO_INCREMENT,
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     nome VARCHAR(100) NOT NULL,
     posicao ENUM('GOL', 'ZAG', 'LAT', 'MEI', 'ATA') NOT NULL,
     agilidade INT NOT NULL,
     idade INT NOT NULL,
     valor_base DECIMAL(6,2) NOT NULL,
     condicao ENUM('APTO', 'MAL_CONDICIONADO', 'DOENTE') NOT NULL DEFAULT 'APTO',
-    clube_id INT NULL,
+    clube_id INT UNSIGNED NULL,
     velocidade INT NOT NULL,
     finalizacao INT NOT NULL,
     passe INT NOT NULL,
@@ -32,9 +32,9 @@ CREATE TABLE IF NOT EXISTS `jogadores` (
 );
 
 CREATE TABLE IF NOT EXISTS `contratos` (
-    id INT NOT NULL AUTO_INCREMENT,
-    jogador_id INT NOT NULL,
-    clube_id INT NOT NULL,
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    jogador_id INT UNSIGNED NOT NULL,
+    clube_id INT UNSIGNED NOT NULL,
     valor_compra DECIMAL(6,2) NOT NULL,
     fidelidade_ate TIMESTAMP NOT NULL,
     situacao ENUM('ATIVO', 'ENCERRADO', 'RESCINDIDO') NOT NULL,
@@ -46,9 +46,9 @@ CREATE TABLE IF NOT EXISTS `contratos` (
 );
 
 CREATE TABLE IF NOT EXISTS `transacoes` (
-    id INT NOT NULL AUTO_INCREMENT,
-    clube_id INT NOT NULL,
-    jogador_id INT NOT NULL,
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    clube_id INT UNSIGNED NOT NULL,
+    jogador_id INT UNSIGNED NOT NULL,
     nome_jogador VARCHAR(100) NOT NULL,
     tipo ENUM('COMPRA', 'VENDA') NOT NULL,
     valor DECIMAL(6,2) NOT NULL,
@@ -63,8 +63,8 @@ CREATE TABLE IF NOT EXISTS `transacoes` (
 );
 
 CREATE TABLE IF NOT EXISTS `escalacoes` (
-    clube_id INT NOT NULL,
-    jogador_id INT NOT NULL UNIQUE,
+    clube_id INT UNSIGNED NOT NULL,
+    jogador_id INT UNSIGNED NOT NULL UNIQUE,
     criado_em TIMESTAMP NOT NULL,
     PRIMARY KEY (clube_id, jogador_id),
     CONSTRAINT `fk_escalacoes_clubes` FOREIGN KEY (clube_id) REFERENCES `clubes` (id),
@@ -72,9 +72,9 @@ CREATE TABLE IF NOT EXISTS `escalacoes` (
 );
 
 CREATE TABLE IF NOT EXISTS `partidas` (
-    id INT NOT NULL AUTO_INCREMENT,
-    mandante_id INT NOT NULL,
-    visitante_id INT NOT NULL,
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    mandante_id INT UNSIGNED NOT NULL,
+    visitante_id INT UNSIGNED NOT NULL,
     gols_mandante INT NOT NULL,
     gols_visitante INT NOT NULL,
     formacao_mandante VARCHAR(5) NOT NULL,
@@ -86,12 +86,12 @@ CREATE TABLE IF NOT EXISTS `partidas` (
 );
 
 CREATE TABLE IF NOT EXISTS `duelos_partida` (
-    id INT NOT NULL AUTO_INCREMENT,
-    partida_id INT NOT NULL,
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    partida_id INT UNSIGNED NOT NULL,
     ordem INT NOT NULL,
-    clube_atacante_id INT NOT NULL,
-    atacante_id INT NOT NULL,
-    defensor_id INT NOT NULL,
+    clube_atacante_id INT UNSIGNED NOT NULL,
+    atacante_id INT UNSIGNED NOT NULL,
+    defensor_id INT UNSIGNED NOT NULL,
     nome_atacante VARCHAR(100) NOT NULL,
     nome_defensor VARCHAR(100) NOT NULL,
     posicao_atacante ENUM('GOL', 'ZAG', 'LAT', 'MEI', 'ATA') NOT NULL,

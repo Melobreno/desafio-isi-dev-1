@@ -25,6 +25,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    pull_policy: build
     container_name: passe_backend
     restart: always
     environment:
