@@ -1,12 +1,6 @@
 package com.github.melobreno.backend.service;
 
-import com.github.melobreno.backend.dto.AlterarCondicaoRequestDto;
-import com.github.melobreno.backend.dto.AtualizarJogadorRequestDto;
-import com.github.melobreno.backend.dto.CriarJogadorRequestDto;
-import com.github.melobreno.backend.dto.CriarJogadorResponseDto;
-import com.github.melobreno.backend.dto.JogadorDto;
-import com.github.melobreno.backend.dto.MetadadosPaginaDto;
-import com.github.melobreno.backend.dto.PaginaJogadoresDto;
+import com.github.melobreno.backend.dto.*;
 import com.github.melobreno.backend.exceptions.BusinessException;
 import com.github.melobreno.backend.model.CondicaoJogador;
 import com.github.melobreno.backend.model.Jogador;
@@ -35,6 +29,7 @@ public class JogadorService {
     private static final BigDecimal VALOR_MINIMO = new BigDecimal("1.00");
     private final JogadorRepository jogadorRepository;
     private final ClubeRepository clubeRepository;
+    private final com.github.melobreno.backend.repository.EscalacaoRepository escalacaoRepository;
 
     /**
      * RN06 - Cadastra um jogador livre e APTO, valida seus indicadores e grava
@@ -129,6 +124,10 @@ public class JogadorService {
         }
 
         jogador.setCondicao(condicao);
+        if (condicao == CondicaoJogador.DOENTE) {
+            // RN19 item 5 - Titular que passa a DOENTE sai da escalação na mesma operação
+            escalacaoRepository.deleteById_JogadorId(jogador.getId());
+        }
         jogador.setAtualizadoEm(ValidacoesGeraisUtils.agoraBrasilia());
         return paraDto(jogadorRepository.save(jogador));
     }
@@ -228,10 +227,7 @@ public class JogadorService {
      * ausência de dígitos e presença de pelo menos duas palavras.
      */
     private String validarNome(String nome) {
-        if (nome == null || nome.codePoints().anyMatch(Character::isISOControl)) {
-            throw new BusinessException(HttpStatus.BAD_REQUEST, "O nome do jogador é obrigatório e não pode conter caracteres de controle.");
-        }
-        String normalizado = nome.trim().replaceAll(" {2,}", " ");
+        String normalizado = ValidacoesGeraisUtils.aplicarV4(nome, "name");
         int tamanho = normalizado.codePointCount(0, normalizado.length());
         if (tamanho < 3 || tamanho > 100) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "O nome do jogador deve ter entre 3 e 100 caracteres.");
@@ -310,10 +306,7 @@ public class JogadorService {
         if (search == null) {
             return null;
         }
-        if (search.codePoints().anyMatch(Character::isISOControl)) {
-            throw new BusinessException(HttpStatus.BAD_REQUEST, "A busca não pode conter caracteres de controle.");
-        }
-        String normalizada = normalizarBusca(search.trim().replaceAll(" {2,}", " "));
+        String normalizada = normalizarBusca(ValidacoesGeraisUtils.aplicarV4Search(search));
         int tamanho = normalizada.codePointCount(0, normalizada.length());
         if (tamanho < 2 || tamanho > 100) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "A busca deve ter entre 2 e 100 caracteres.");
@@ -461,7 +454,7 @@ public class JogadorService {
      * RN06 - Calcula o overall pela soma ponderada dos atributos conforme
      * a posição, arredondando para o inteiro mais próximo com meio para cima.
      */
-    private int calcularOverall(Jogador jogador) {
+    public int calcularOverall(Jogador jogador) {
         int[] atributos = {jogador.getVelocidade(), jogador.getFinalizacao(), jogador.getPasse(),
                 jogador.getDrible(), jogador.getDefesa(), jogador.getFisico()};
         int somaPonderada = 0;
@@ -477,7 +470,7 @@ public class JogadorService {
      * RN02 a RN05 - Calcula o valor de mercado usando condição, ajuste de
      * agilidade, idade, teto de desconto, arredondamento e piso.
      */
-    private BigDecimal calcularValorMercado(Jogador jogador) {
+    public BigDecimal calcularValorMercado(Jogador jogador) {
         int descontoCondicao = jogador.getCondicao().descontoMercadoEmDecimos();
         if (descontoCondicao > 0) {
             if (jogador.getAgilidade() >= 80) {
@@ -499,7 +492,14 @@ public class JogadorService {
      * RN05 e RN06 - Constrói a resposta com valor de mercado e overall
      * calculados, sem persistir esses valores calculados.
      */
-    private JogadorDto paraDto(Jogador jogador) {
+    public JogadorDto paraDto(Jogador jogador) {
+        return paraDto(jogador, null);
+    }
+
+    /**
+     * Constrói a resposta com valor de mercado, overall e contrato associado.
+     */
+    public JogadorDto paraDto(Jogador jogador, ContratoDto contrato) {
         return new JogadorDto(
                 jogador.getId(),
                 jogador.getNome(),
@@ -517,7 +517,8 @@ public class JogadorService {
                 jogador.getFisico(),
                 jogador.getPotencial(),
                 calcularOverall(jogador),
-                jogador.getClube() == null ? null : jogador.getClube().getId()
+                jogador.getClube() == null ? null : jogador.getClube().getId(),
+                contrato
         );
     }
 
