@@ -10,6 +10,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -30,7 +32,8 @@ public class Clube {
     @Column(nullable = false, length = 60, unique = true)
     private String nome;
 
-    @Column(nullable = false, length = 3, unique = true)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(nullable = false, length = 3, unique = true, columnDefinition = "CHAR(3)")
     private String sigla;
 
     @Column(nullable = false, precision = 10, scale = 2)

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import java.math.BigDecimal;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record JogadorDto(
         Integer id,
         String name,
@@ -26,6 +25,7 @@ public record JogadorDto(
         Integer potential,
         Integer overall,
         Integer clubId,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         ContratoDto contract
 ) {
     public JogadorDto(
