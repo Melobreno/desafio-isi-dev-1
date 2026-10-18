@@ -1,40 +1,43 @@
-import type {
-  ContractStatus,
-  PlayerCondition,
-  PlayerPosition,
-} from '../types/api';
+import type { PlayerCondition, PlayerPosition } from '../types/api';
 
 /**
  * Formats a number in fictional currency ("moedas") with 2 decimal places and comma separator (pt-BR),
- * e.g., "M$ 40,00" or "40,00".
+ * e.g., "R$ 40,00" or "40,00".
  */
-export function formatCurrency(value: number | null | undefined, withSymbol = true): string {
+export function formatCurrency(
+  value: number | null | undefined,
+  withSymbol = false
+): string {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return withSymbol ? 'M$ 0,00' : '0,00';
+    return withSymbol ? 'R$ 0,00' : '0,00';
   }
   const formatted = new Intl.NumberFormat('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Number(value));
-  return withSymbol ? `M$ ${formatted}` : formatted;
+  return withSymbol ? `R$ ${formatted}` : formatted;
 }
 
 /**
  * Formats cash variation with explicit "+" or "-" sign, 2 decimal places, and comma separator (F09).
  */
-export function formatSignedCurrency(value: number | null | undefined): string {
+export function formatSignedCurrency(
+  value: number | null | undefined,
+  withSymbol = false
+): string {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return 'M$ 0,00';
+    return withSymbol ? 'R$ 0,00' : '0,00';
   }
   const num = Number(value);
   const absFormatted = new Intl.NumberFormat('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Math.abs(num));
+  const prefix = withSymbol ? 'R$ ' : '';
 
-  if (num > 0) return `+ M$ ${absFormatted}`;
-  if (num < 0) return `- M$ ${absFormatted}`;
-  return `M$ ${absFormatted}`;
+  if (num > 0) return `+ ${prefix}${absFormatted}`;
+  if (num < 0) return `- ${prefix}${absFormatted}`;
+  return `${prefix}${absFormatted}`;
 }
 
 /**
@@ -52,22 +55,6 @@ export function formatDateTimePtBr(isoString: string | null | undefined): string
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(date);
-}
-
-/**
- * Formats an ISO-8601 date string as DD/MM/AAAA in Brasília timezone.
- */
-export function formatDatePtBr(isoString: string | null | undefined): string {
-  if (!isoString) return '—';
-  const date = new Date(isoString);
-  if (Number.isNaN(date.getTime())) return isoString;
-
-  return new Intl.DateTimeFormat('pt-BR', {
-    timeZone: 'America/Sao_Paulo',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
   }).format(date);
 }
 
@@ -109,11 +96,11 @@ export function getDefaultLoyaltyDateTimeLocal(daysAhead = 90): string {
 }
 
 export const POSITION_LABELS: Record<PlayerPosition, string> = {
-  GOL: 'Goleiro (GOL)',
-  ZAG: 'Zagueiro (ZAG)',
-  LAT: 'Lateral (LAT)',
-  MEI: 'Meia (MEI)',
-  ATA: 'Atacante (ATA)',
+  GOL: 'Goleiro',
+  ZAG: 'Zagueiro',
+  LAT: 'Lateral',
+  MEI: 'Meio-campo',
+  ATA: 'Atacante',
 };
 
 export const POSITION_SHORT_LABELS: Record<PlayerPosition, string> = {
@@ -134,12 +121,6 @@ export const CONDITION_SHORT_LABELS: Record<PlayerCondition, string> = {
   APTO: 'Apto',
   MAL_CONDICIONADO: 'Mal cond.',
   DOENTE: 'Doente',
-};
-
-export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
-  ATIVO: 'Ativo',
-  ENCERRADO: 'Encerrado',
-  RESCINDIDO: 'Rescindido',
 };
 
 export function getInitials(name: string): string {

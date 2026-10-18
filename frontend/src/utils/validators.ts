@@ -6,30 +6,12 @@ function normalizeTextV4(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
 
-function validateIntegerRange(
-  raw: string | number,
-  min: number,
-  max: number,
-  fieldLabel: string
-): string | undefined {
-  if (raw === '' || raw === null || raw === undefined) {
-    return `${fieldLabel} é obrigatório.`;
-  }
-  const num = Number(raw);
-  if (!Number.isInteger(num)) {
-    return `${fieldLabel} deve ser um número inteiro.`;
-  }
-  if (num < min || num > max) {
-    return `${fieldLabel} deve estar entre ${min} e ${max}.`;
-  }
-  return undefined;
-}
-
 export function validatePlayerForm(values: {
   name: string;
   position: string;
   agility: string | number;
   age: string | number;
+  currentAge?: number;
   pace?: string | number;
   shooting?: string | number;
   passing?: string | number;
@@ -43,42 +25,110 @@ export function validatePlayerForm(values: {
 
   const cleanName = normalizeTextV4(values.name);
   if (!cleanName) {
-    errors.name = 'Informe o nome do jogador.';
+    errors.name = 'Informe o nome.';
   } else if (cleanName.length < 3 || cleanName.length > 100) {
-    errors.name = 'O nome do jogador deve ter entre 3 e 100 caracteres.';
+    errors.name = 'Use de 3 a 100 caracteres.';
+  } else if (/\d/.test(cleanName)) {
+    errors.name = 'O nome não pode conter números.';
+  } else if (cleanName.split(' ').length < 2) {
+    errors.name = 'Informe pelo menos duas palavras.';
   }
 
   const validPositions: PlayerPosition[] = ['GOL', 'ZAG', 'LAT', 'MEI', 'ATA'];
   if (!values.position || !validPositions.includes(values.position as PlayerPosition)) {
-    errors.position = 'Selecione uma posição válida.';
+    errors.position = 'Selecione uma posição.';
   }
 
-  const agilityErr = validateIntegerRange(values.agility, 1, 100, 'A agilidade');
-  if (agilityErr) errors.agility = agilityErr;
+  let validAge: number | null = null;
+  if (String(values.age).trim() === '' || values.age === null || values.age === undefined) {
+    errors.age = 'Informe a idade.';
+  } else {
+    const ageNum = Number(values.age);
+    if (!Number.isInteger(ageNum) || ageNum < 16 || ageNum > 45) {
+      errors.age = 'Use uma idade de 16 a 45 anos.';
+    } else if (
+      values.isEdit &&
+      typeof values.currentAge === 'number' &&
+      ageNum < values.currentAge
+    ) {
+      errors.age = `A idade não pode diminuir (atual: ${values.currentAge}).`;
+    } else {
+      validAge = ageNum;
+    }
+  }
 
-  const ageErr = validateIntegerRange(values.age, 16, 45, 'A idade');
-  if (ageErr) errors.age = ageErr;
+  if (
+    String(values.agility).trim() === '' ||
+    values.agility === null ||
+    values.agility === undefined
+  ) {
+    errors.agility = 'Informe a agilidade.';
+  } else {
+    const agiNum = Number(values.agility);
+    if (!Number.isInteger(agiNum) || agiNum < 1 || agiNum > 100) {
+      errors.agility = 'Use um valor de 1 a 100.';
+    } else if (validAge !== null && validAge >= 35 && agiNum > 85) {
+      errors.agility = 'Máximo 85 para 35 anos ou mais.';
+    }
+  }
 
   if (!values.isEdit) {
     const attrKeys: Array<{
       key: 'pace' | 'shooting' | 'passing' | 'dribbling' | 'defending' | 'physical';
-      label: string;
+      emptyLabel: string;
+      displayName: string;
     }> = [
-      { key: 'pace', label: 'Velocidade' },
-      { key: 'shooting', label: 'Finalização' },
-      { key: 'passing', label: 'Passe' },
-      { key: 'dribbling', label: 'Drible' },
-      { key: 'defending', label: 'Defesa' },
-      { key: 'physical', label: 'Físico' },
+      { key: 'pace', emptyLabel: ' a velocidade', displayName: 'Velocidade' },
+      { key: 'shooting', emptyLabel: ' a finalização', displayName: 'Finalização' },
+      { key: 'passing', emptyLabel: ' o passe', displayName: 'Passe' },
+      { key: 'dribbling', emptyLabel: ' o drible', displayName: 'Drible' },
+      { key: 'defending', emptyLabel: ' a defesa', displayName: 'Defesa' },
+      { key: 'physical', emptyLabel: ' o físico', displayName: 'Físico' },
     ];
 
-    for (const { key, label } of attrKeys) {
-      const err = validateIntegerRange(values[key] ?? '', 1, 99, label);
-      if (err) errors[key] = err;
+    let validPotential: number | null = null;
+    if (
+      values.potential === undefined ||
+      values.potential === null ||
+      String(values.potential).trim() === ''
+    ) {
+      errors.potential = 'Informe o potencial.';
+    } else {
+      const potNum = Number(values.potential);
+      if (!Number.isInteger(potNum) || potNum < 1 || potNum > 99) {
+        errors.potential = 'Use um valor de 1 a 99.';
+      } else {
+        validPotential = potNum;
+      }
     }
 
-    const potErr = validateIntegerRange(values.potential ?? '', 1, 99, 'O potencial');
-    if (potErr) errors.potential = potErr;
+    const validAttrs: number[] = [];
+    for (const { key, emptyLabel, displayName } of attrKeys) {
+      const rawVal = values[key];
+      if (rawVal === undefined || rawVal === null || String(rawVal).trim() === '') {
+        errors[key] = `Informe${emptyLabel}.`;
+      } else {
+        const num = Number(rawVal);
+        if (!Number.isInteger(num) || num < 1 || num > 99) {
+          errors[key] = 'Use um valor de 1 a 99.';
+        } else {
+          validAttrs.push(num);
+          if (validPotential !== null && num > validPotential) {
+            errors[key] = `${displayName} (${num}) acima do potencial (${validPotential}).`;
+          }
+        }
+      }
+    }
+
+    if (validAttrs.length === 6 && validPotential !== null && !errors.potential) {
+      const maxAttr = Math.max(...validAttrs);
+      const sumAttrs = validAttrs.reduce((acc, v) => acc + v, 0);
+      if (validAge !== null && validAge >= 33 && validPotential !== maxAttr) {
+        errors.potential = `Com 33+ anos, deve ser igual ao maior atributo (${maxAttr}).`;
+      } else if (sumAttrs > 480) {
+        errors.potential = `Soma dos atributos (${sumAttrs}) passa de 480.`;
+      }
+    }
   }
 
   return errors;

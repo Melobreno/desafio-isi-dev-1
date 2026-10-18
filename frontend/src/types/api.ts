@@ -52,12 +52,7 @@ export interface PaginatedPlayersResponse {
 }
 
 export type PlayerSortOption =
-  | 'name'
-  | 'value_asc'
-  | 'value_desc'
-  | 'age_asc'
-  | 'age_desc'
-  | 'position';
+  'name' | 'value_asc' | 'value_desc' | 'age_asc' | 'age_desc' | 'position';
 
 export interface PlayerFilters {
   search?: string;

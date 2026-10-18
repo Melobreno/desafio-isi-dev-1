@@ -102,10 +102,7 @@ export async function requestCsvText(path: string): Promise<string> {
       },
     });
   } catch {
-    throw new ApiError(
-      'Não foi possível conectar ao servidor para exportar o CSV.',
-      0
-    );
+    throw new ApiError('Não foi possível conectar ao servidor para exportar o CSV.', 0);
   }
 
   const text = await response.text();
