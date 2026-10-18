@@ -40,7 +40,11 @@ export function validatePlayerForm(values: {
   }
 
   let validAge: number | null = null;
-  if (String(values.age).trim() === '' || values.age === null || values.age === undefined) {
+  if (
+    String(values.age).trim() === '' ||
+    values.age === null ||
+    values.age === undefined
+  ) {
     errors.age = 'Informe a idade.';
   } else {
     const ageNum = Number(values.age);
@@ -114,7 +118,8 @@ export function validatePlayerForm(values: {
         } else {
           validAttrs.push(num);
           if (validPotential !== null && num > validPotential) {
-            errors[key] = `${displayName} (${num}) acima do potencial (${validPotential}).`;
+            errors[key] =
+              `${displayName} (${num}) acima do potencial (${validPotential}).`;
           }
         }
       }
@@ -139,7 +144,10 @@ export function validateConditionForm(values: {
 }): Record<string, string> {
   const errors: Record<string, string> = {};
   const validConditions: PlayerCondition[] = ['APTO', 'MAL_CONDICIONADO', 'DOENTE'];
-  if (!values.condition || !validConditions.includes(values.condition as PlayerCondition)) {
+  if (
+    !values.condition ||
+    !validConditions.includes(values.condition as PlayerCondition)
+  ) {
     errors.condition = 'Selecione uma condição física válida.';
   }
   return errors;
@@ -194,7 +202,9 @@ export function validateLineupForm(values: {
     errors.formation = 'Selecione uma formação tática.';
   }
 
-  const filled = values.slots.filter((id): id is number => typeof id === 'number' && id > 0);
+  const filled = values.slots.filter(
+    (id): id is number => typeof id === 'number' && id > 0
+  );
   if (filled.length !== 5) {
     errors.slots = 'Selecione um titular para cada uma das 5 vagas da escalação.';
   } else if (new Set(filled).size !== 5) {
