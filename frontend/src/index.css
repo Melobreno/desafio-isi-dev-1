@@ -3279,3 +3279,330 @@ body {
   width: 32px;
   display: inline-block;
 }
+
+/* ==========================================================================
+   Módulo 4: Escalação, Partidas, Duelos e Classificação (F12, F13, F14)
+   ========================================================================== */
+
+/* Lineup / Escalação */
+.lineup-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+.lineup-form-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lineup-formation-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.lineup-formation-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 8px;
+  background: var(--background);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.lineup-formation-card:hover {
+  border-color: var(--primary);
+  background: var(--muted-subtle);
+}
+
+.lineup-formation-card.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.lineup-formation-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.lineup-formation-desc {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-top: 2px;
+}
+
+.lineup-slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lineup-slot-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  transition: border-color 0.15s ease;
+}
+
+.lineup-slot-row:focus-within {
+  border-color: var(--primary);
+}
+
+.lineup-slot-badge {
+  width: 44px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--muted-subtle);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.lineup-slot-select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Tactical Pitch Display */
+.lineup-pitch-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lineup-pitch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lineup-pitch-field {
+  background: linear-gradient(180deg, #163625 0%, #1a432e 50%, #163625 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 380px;
+  position: relative;
+  overflow: hidden;
+}
+
+.lineup-pitch-field::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.lineup-pitch-field::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.lineup-pitch-sector {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.lineup-pitch-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: #fff;
+  text-align: center;
+  width: 76px;
+}
+
+.lineup-pitch-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.lineup-pitch-player-name {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 74px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.lineup-pitch-player-meta {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Matches scoreboard & Duel cards */
+.scoreboard-score {
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--muted-subtle);
+  border: 1px solid var(--border);
+}
+
+.match-team-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.duels-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.duel-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  background: var(--background);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.duel-card.is-goal {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: var(--success-soft);
+}
+
+.duel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+}
+
+.duel-body {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.duel-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.duel-side.attacker {
+  text-align: left;
+}
+
+.duel-side.defender {
+  text-align: right;
+}
+
+.duel-player-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--foreground);
+}
+
+.duel-player-stat {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+
+.duel-vs-pill {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--muted);
+}
+
+.duel-goal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.15);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.duel-saved-badge {
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+/* Standings Highlights */
+.standings-pos-badge {
+  font-weight: 700;
+  font-size: 13px;
+  width: 24px;
+  text-align: center;
+  color: var(--foreground);
+}
+
+.standings-pts {
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+@media (max-width: 900px) {
+  .lineup-layout {
+    grid-template-columns: 1fr;
+  }
+}

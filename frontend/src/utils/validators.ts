@@ -224,6 +224,11 @@ export function validateMatchForm(values: {
   }
   if (!values.awayClubId || Number(values.awayClubId) < 1) {
     errors.awayClubId = 'Selecione o clube visitante.';
+  } else if (
+    values.homeClubId &&
+    Number(values.homeClubId) === Number(values.awayClubId)
+  ) {
+    errors.awayClubId = 'O clube visitante deve ser diferente do mandante.';
   }
   return errors;
 }

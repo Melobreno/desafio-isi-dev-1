@@ -2,6 +2,8 @@ import {
   validateBuyPlayerForm,
   validateClubForm,
   validateConditionForm,
+  validateLineupForm,
+  validateMatchForm,
   validatePlayerForm,
 } from './validators';
 
@@ -111,5 +113,71 @@ describe('validateConditionForm', () => {
   it('aceita apenas condições conhecidas', () => {
     expect(validateConditionForm({ condition: 'APTO' })).toEqual({});
     expect(validateConditionForm({ condition: 'apto' }).condition).toBeDefined();
+  });
+});
+
+describe('validateLineupForm', () => {
+  it('aceita formação e 5 titulares distintos', () => {
+    expect(
+      validateLineupForm({
+        formation: '2-1-1',
+        slots: [1, 2, 3, 4, 5],
+      })
+    ).toEqual({});
+  });
+
+  it('exige formação válida', () => {
+    expect(
+      validateLineupForm({
+        formation: '4-4-2',
+        slots: [1, 2, 3, 4, 5],
+      }).formation
+    ).toBe('Selecione uma formação tática.');
+  });
+
+  it('exige 5 vagas preenchidas sem repetição', () => {
+    expect(
+      validateLineupForm({
+        formation: '3-1',
+        slots: [1, 2, 3, '', null],
+      }).slots
+    ).toContain('5 vagas');
+
+    expect(
+      validateLineupForm({
+        formation: '3-1',
+        slots: [1, 2, 3, 4, 4],
+      }).slots
+    ).toContain('mais de uma vaga');
+  });
+});
+
+describe('validateMatchForm', () => {
+  it('aceita mandante e visitante distintos', () => {
+    expect(
+      validateMatchForm({
+        homeClubId: 1,
+        awayClubId: 2,
+      })
+    ).toEqual({});
+  });
+
+  it('exige clubes e impede confronto do clube consigo mesmo', () => {
+    expect(
+      validateMatchForm({
+        homeClubId: '',
+        awayClubId: '',
+      })
+    ).toEqual({
+      homeClubId: 'Selecione o clube mandante.',
+      awayClubId: 'Selecione o clube visitante.',
+    });
+
+    expect(
+      validateMatchForm({
+        homeClubId: 3,
+        awayClubId: 3,
+      }).awayClubId
+    ).toBe('O clube visitante deve ser diferente do mandante.');
   });
 });
