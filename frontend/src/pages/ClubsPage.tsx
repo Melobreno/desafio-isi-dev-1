@@ -1,6 +1,14 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowUpDown, ChevronRight, Plus, Shield } from 'lucide-react';
+import {
+  ArrowUpDown,
+  ChevronRight,
+  Plus,
+  Search,
+  SearchX,
+  Shield,
+  X,
+} from 'lucide-react';
 import type { ClubResponse, ClubSortOption } from '../types/api';
 import { clubsService } from '../services/clubsService';
 import { formatCurrency } from '../utils/formatters';
@@ -94,6 +102,7 @@ export const ClubsPage: React.FC = () => {
   const navigate = useNavigate();
   const { openCreateClubModal } = useLeagueSummary();
   const [sort, setSort] = useState<ClubSortOption>('name');
+  const [search, setSearch] = useState<string>('');
 
   const fetchClubs = useCallback(() => clubsService.list(sort), [sort]);
   const { data, isLoading, error, reload } = useAsyncResource(
@@ -102,36 +111,106 @@ export const ClubsPage: React.FC = () => {
   );
   const clubs = data ?? NO_CLUBS;
 
+  const filteredClubs = useMemo(() => {
+    if (!search.trim()) return clubs;
+    const term = search.trim().toLowerCase();
+    return clubs.filter(
+      (c) => c.name.toLowerCase().includes(term) || c.acronym.toLowerCase().includes(term)
+    );
+  }, [clubs, search]);
+
   const currentSort =
     SORT_OPTIONS.find((option) => option.value === sort) ?? SORT_OPTIONS[0];
 
   const toolbar =
     clubs.length > 0 ? (
-      <div className="clubs-toolbar-row">
-        <div className="toolbar-inline">
+      <div
+        className="clubs-toolbar-row"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          width: '100%',
+        }}
+      >
+        <div
+          className="toolbar-inline"
+          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+        >
           <span className="cell-strong">
-            {clubs.length} {clubs.length === 1 ? 'clube' : 'clubes'}
+            {filteredClubs.length} {filteredClubs.length === 1 ? 'clube' : 'clubes'}
           </span>
           <span className="club-count-pill tabular-nums">
             {clubs.length} de {MAX_CLUBS}
           </span>
         </div>
 
-        <OptionPopover
-          triggerIcon={<ArrowUpDown size={13} />}
-          triggerLabel={`Ordenar: ${currentSort.shortLabel}`}
-          title="Ordenar por"
-          options={SORT_OPTIONS}
-          value={sort}
-          onChange={setSort}
-          align="right"
-          width={250}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ position: 'relative', width: 220 }}>
+            <Search
+              size={14}
+              style={{
+                position: 'absolute',
+                left: 9,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--muted-foreground)',
+              }}
+            />
+            <input
+              type="text"
+              className="input"
+              placeholder="Buscar por nome ou sigla..."
+              style={{
+                paddingLeft: 28,
+                paddingRight: search ? 28 : 10,
+                height: 32,
+                fontSize: 12.5,
+              }}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Buscar clube por nome ou sigla"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                style={{
+                  position: 'absolute',
+                  right: 6,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  padding: 2,
+                  cursor: 'pointer',
+                  color: 'var(--muted-foreground)',
+                  display: 'flex',
+                }}
+                aria-label="Limpar busca"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          <OptionPopover
+            triggerIcon={<ArrowUpDown size={13} />}
+            triggerLabel={`Ordenar: ${currentSort.shortLabel}`}
+            title="Ordenar por"
+            options={SORT_OPTIONS}
+            value={sort}
+            onChange={setSort}
+            align="right"
+            width={250}
+          />
+        </div>
       </div>
     ) : undefined;
 
   return (
-    <div>
+    <>
       <PageHeader
         icon={<Shield size={20} />}
         title="Clubes"
@@ -150,25 +229,37 @@ export const ClubsPage: React.FC = () => {
       <DataTable
         toolbar={toolbar}
         columns={columns}
-        data={clubs}
+        data={filteredClubs}
         rowKey={(club) => club.id}
         isLoading={isLoading}
         error={error}
         onRetry={reload}
         onRowClick={(club) => navigate(`/clubes/${club.id}`)}
-        emptyIcon={<Shield size={20} />}
-        emptyTitle="Nenhum clube cadastrado"
-        emptyDescription="Crie um clube para começar a comprar jogadores, montar a escalação e disputar a liga."
+        emptyIcon={search ? <SearchX size={24} /> : <Shield size={20} />}
+        emptyTitle={
+          search ? `Nenhum clube encontrado para "${search}"` : 'Nenhum clube cadastrado'
+        }
+        emptyDescription={
+          search
+            ? 'Nenhum clube corresponde ao nome ou à sigla informados na busca. Verifique a ortografia ou limpe a busca.'
+            : 'Crie um clube para começar a comprar jogadores, montar a escalação e disputar a liga.'
+        }
         emptyAction={
-          <Button
-            variant="primary"
-            leftIcon={<Plus size={14} />}
-            onClick={openCreateClubModal}
-          >
-            Novo clube
-          </Button>
+          search ? (
+            <Button variant="secondary" size="sm" onClick={() => setSearch('')}>
+              Limpar busca
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              leftIcon={<Plus size={14} />}
+              onClick={openCreateClubModal}
+            >
+              Novo clube
+            </Button>
+          )
         }
       />
-    </div>
+    </>
   );
 };

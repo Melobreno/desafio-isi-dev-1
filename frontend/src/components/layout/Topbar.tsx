@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
   Menu,
@@ -13,11 +13,13 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useLeagueSummary } from '../../context/LeagueSummaryContext';
+import logoCompact from '../../assets/logo-medium.svg';
 
 interface TopbarProps {
   onOpenMobileMenu: () => void;
   isSidebarCollapsed: boolean;
   onToggleSidebarCollapse: () => void;
+  showSidebarControls?: boolean;
 }
 
 function formatDeltaLabel(delta: number): string {
@@ -35,6 +37,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   onOpenMobileMenu,
   isSidebarCollapsed,
   onToggleSidebarCollapse,
+  showSidebarControls = true,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -68,7 +71,11 @@ export const Topbar: React.FC<TopbarProps> = ({
     }
   };
 
-  const getBreadcrumb = (): { section: string; page: string } => {
+  const getBreadcrumb = (): {
+    section: string;
+    subSection?: { title: string; path: string };
+    page: string;
+  } => {
     const path = location.pathname;
     if (path === '/') return { section: 'Passe', page: 'Início' };
     if (path.startsWith('/jogadores')) return { section: 'Mercado', page: 'Jogadores' };
@@ -78,18 +85,26 @@ export const Topbar: React.FC<TopbarProps> = ({
       const foundClub = clubs.find((c) => String(c.id) === clubIdStr);
       return {
         section: 'Clubes',
-        page: foundClub ? foundClub.name : 'Detalhes do clube',
+        subSection: { title: 'Clubes', path: '/clubes' },
+        page: foundClub ? foundClub.name : 'Clube não encontrado',
       };
     }
     if (path.startsWith('/liga/classificacao'))
       return { section: 'Liga', page: 'Classificação' };
+    if (path.startsWith('/liga/jogos/')) {
+      return {
+        section: 'Liga',
+        subSection: { title: 'Partidas', path: '/liga/jogos' },
+        page: 'Detalhes da partida',
+      };
+    }
     if (path.startsWith('/liga/jogos')) return { section: 'Liga', page: 'Partidas' };
     if (path.startsWith('/mercado/historico'))
       return { section: 'Mercado', page: 'Histórico de transações' };
     return { section: 'Passe', page: 'Painel' };
   };
 
-  const { section, page } = getBreadcrumb();
+  const { section, subSection, page } = getBreadcrumb();
 
   const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
     hour: '2-digit',
@@ -105,28 +120,62 @@ export const Topbar: React.FC<TopbarProps> = ({
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <button
-          type="button"
-          className="btn btn-ghost btn-icon mobile-menu-btn"
-          onClick={onOpenMobileMenu}
-          aria-label="Abrir menu"
-        >
-          <Menu size={18} />
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost btn-icon desktop-collapse-btn"
-          onClick={onToggleSidebarCollapse}
-          aria-label={
-            isSidebarCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'
-          }
-          title={isSidebarCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
-        >
-          <PanelLeft size={16} />
-        </button>
-        <span className="topbar-divider" aria-hidden="true" />
+        {showSidebarControls ? (
+          <>
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon mobile-menu-btn"
+              onClick={onOpenMobileMenu}
+              aria-label="Abrir menu"
+            >
+              <Menu size={18} />
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon desktop-collapse-btn"
+              onClick={onToggleSidebarCollapse}
+              aria-label={
+                isSidebarCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'
+              }
+              title={
+                isSidebarCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'
+              }
+            >
+              <PanelLeft size={16} />
+            </button>
+            <span className="topbar-divider" aria-hidden="true" />
+          </>
+        ) : (
+          <>
+            <Link
+              to="/"
+              className="sidebar-logo-link"
+              title="Passe — Página Inicial"
+              style={{ marginRight: 8, display: 'inline-flex', alignItems: 'center' }}
+            >
+              <img src={logoCompact} alt="Passe" style={{ width: 26, height: 26 }} />
+            </Link>
+            <span className="topbar-divider" aria-hidden="true" />
+          </>
+        )}
         <nav className="topbar-breadcrumb" aria-label="Breadcrumb">
           <span>{section}</span>
+          {subSection && (
+            <>
+              <span>›</span>
+              <span
+                role="button"
+                tabIndex={0}
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate(subSection.path)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') navigate(subSection.path);
+                }}
+              >
+                {subSection.title}
+              </span>
+            </>
+          )}
           <span>›</span>
           <strong>{page}</strong>
         </nav>

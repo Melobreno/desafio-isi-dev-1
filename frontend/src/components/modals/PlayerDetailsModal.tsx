@@ -7,6 +7,7 @@ import {
   ShoppingCart,
   Tag,
   TrendingUp,
+  UserX,
   X,
 } from 'lucide-react';
 import type { PlayerResponse } from '../../types/api';
@@ -16,7 +17,6 @@ import { formatCurrency } from '../../utils/formatters';
 import { Button } from '../ui/Button';
 import { ConditionBadge, PositionBadge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
-import { Alert } from '../ui/Alert';
 import { useLeagueSummary } from '../../context/LeagueSummaryContext';
 
 interface PlayerDetailsModalProps {
@@ -178,7 +178,32 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
         {/* Drawer Body */}
         <div className="drawer-body">
           {error ? (
-            <Alert variant="error" description={error} />
+            <div
+              className="not-found-card"
+              style={{ padding: '24px 16px', boxShadow: 'none' }}
+            >
+              <div
+                className="not-found-icon-wrap"
+                style={{ width: 48, height: 48, marginBottom: 0 }}
+              >
+                <UserX size={24} color="var(--danger)" />
+              </div>
+              <span className="not-found-code-badge">Não encontrado</span>
+              <h3 className="not-found-title" style={{ fontSize: 16 }}>
+                Jogador não encontrado
+              </h3>
+              <p className="not-found-description" style={{ fontSize: 12 }}>
+                {error}
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onClose}
+                style={{ marginTop: 8 }}
+              >
+                Fechar
+              </Button>
+            </div>
           ) : isLoading && !player ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div className="skeleton" style={{ height: 76, width: '100%' }} />

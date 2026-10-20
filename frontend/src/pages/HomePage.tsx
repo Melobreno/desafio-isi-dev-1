@@ -1,292 +1,348 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Users, Building2, Trophy, Swords, Plus, ArrowRight, Play } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ArrowRight,
+  ArrowRightLeft,
+  ChevronRight,
+  Clock,
+  History,
+  Shield,
+  ShoppingCart,
+  Swords,
+  Trophy,
+  Users,
+} from 'lucide-react';
 import { useLeagueSummary } from '../context/LeagueSummaryContext';
-import { PageHeader } from '../components/layout/PageHeader';
-import { StatCard } from '../components/ui/StatCard';
-import { Button } from '../components/ui/Button';
-import { ClubShield } from '../components/ui/ClubShield';
-import { formatCurrency, formatDateTimePtBr } from '../utils/formatters';
+import { leagueService } from '../services/leagueService';
+import type { StandingRow } from '../types/api';
+import { SoccerPitchSvg } from '../components/ui/SoccerPitch';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { clubs, totalPlayers, matches, isLoadingSummary, openCreateClubModal } =
-    useLeagueSummary();
+  const { clubs, totalPlayers, freePlayersCount, matches } = useLeagueSummary();
+  const [standings, setStandings] = useState<StandingRow[]>([]);
 
-  const totalNetWorth = clubs.reduce((acc, c) => acc + c.net_worth, 0);
+  useEffect(() => {
+    let active = true;
+    if (matches.length > 0) {
+      leagueService
+        .listStandings()
+        .then((data: StandingRow[]) => {
+          if (active && data) {
+            setStandings(data);
+          }
+        })
+        .catch(() => {
+          // Silent fallback if standings not yet available
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [matches.length]);
+
+  // Keyboard shortcut: pressing Enter starts navigating
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      if (e.key === 'Enter') {
+        navigate('/jogadores');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
+
+  const hasMatches = matches.length > 0;
+  const leader = standings.length > 0 ? standings[0] : null;
 
   return (
-    <>
-      <PageHeader
-        icon={<Trophy size={20} />}
-        title="Painel da Liga"
-        subtitle="Gerencie jogadores, clubes, contratos de fidelidade, escalações e partidas da temporada."
-        actions={
-          <>
-            <Button
-              variant="secondary"
-              leftIcon={<Plus size={14} />}
-              onClick={openCreateClubModal}
-            >
-              Novo clube
-            </Button>
-            <Button
-              variant="primary"
-              leftIcon={<Users size={14} />}
-              onClick={() => navigate('/jogadores?novo=1')}
-            >
-              Novo jogador
-            </Button>
-          </>
-        }
-      />
-
-      <div className="stat-grid">
-        <StatCard
-          label="Jogadores ativos"
-          value={isLoadingSummary ? '...' : totalPlayers}
-          subValue="Cadastrados na base da liga"
-        />
-        <StatCard
-          label="Clubes na liga"
-          value={isLoadingSummary ? '...' : `${clubs.length} / 20`}
-          subValue="Limite máximo de 20 clubes (RN10)"
-        />
-        <StatCard
-          label="Patrimônio somado"
-          value={isLoadingSummary ? '...' : formatCurrency(totalNetWorth)}
-          subValue="Caixa + valor de mercado dos elencos"
-          accentColor="var(--primary)"
-        />
-        <StatCard
-          label="Partidas disputadas"
-          value={isLoadingSummary ? '...' : matches.length}
-          subValue="Histórico oficial da temporada"
-        />
-      </div>
-
-      <div className="form-grid-2" style={{ alignItems: 'stretch' }}>
-        {/* Card de Clubes */}
-        <div
-          style={{
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: 18,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: 14,
-            background: 'var(--background)',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Building2 size={16} color="var(--primary)" />
-                <span style={{ fontWeight: 600, fontSize: 14 }}>Clubes cadastrados</span>
-              </div>
-              <Link
-                to="/clubes"
-                style={{
-                  fontSize: 12,
-                  color: 'var(--primary)',
-                  textDecoration: 'none',
-                  fontWeight: 500,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                Ver todos <ArrowRight size={12} />
-              </Link>
-            </div>
-
-            {clubs.length === 0 ? (
-              <div
-                style={{
-                  padding: '24px 16px',
-                  textAlign: 'center',
-                  background: 'var(--muted-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  color: 'var(--muted-foreground)',
-                  fontSize: 12,
-                }}
-              >
-                Nenhum clube cadastrado ainda. Crie clubes para comprar jogadores e
-                disputar partidas.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {clubs.slice(0, 5).map((club) => (
-                  <Link
-                    key={club.id}
-                    to={`/clubes/${club.id}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 10px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border)',
-                      textDecoration: 'none',
-                      color: 'inherit',
-                    }}
-                  >
-                    <ClubShield
-                      name={`${club.name} (${club.acronym})`}
-                      clubId={club.id}
-                    />
-                    <span
-                      className="tabular-nums"
-                      style={{ fontSize: 12, fontWeight: 600 }}
-                    >
-                      Patrimônio: {formatCurrency(club.net_worth)}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<Plus size={13} />}
-              onClick={openCreateClubModal}
-            >
-              Criar clube
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/jogadores')}>
-              Ir para mercado de jogadores
-            </Button>
-          </div>
+    <div className="landing-mockup-container">
+      <div className="landing-mockup-card">
+        {/* Official Soccer Pitch Background Vector (campo area.svg: 1234 x 702) */}
+        <div className="landing-pitch-svg-wrap">
+          <SoccerPitchSvg
+            strokeColor="var(--border)"
+            strokeWidth={1.5}
+            fillColor="var(--background)"
+            className="landing-pitch-svg"
+          />
         </div>
 
-        {/* Card de Últimas Partidas */}
-        <div
-          style={{
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: 18,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: 14,
-            background: 'var(--background)',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Swords size={16} color="var(--primary)" />
-                <span style={{ fontWeight: 600, fontSize: 14 }}>Últimas partidas</span>
-              </div>
-              <Link
-                to="/liga/jogos"
-                style={{
-                  fontSize: 12,
-                  color: 'var(--primary)',
-                  textDecoration: 'none',
-                  fontWeight: 500,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
+        {/* Content Layer */}
+        <div className="landing-content-layer">
+          {/* Brand Logo & Name */}
+          <div className="landing-brand-row">
+            <div className="landing-brand-icon" title="Passe">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 28 28"
+                fill="none"
+                aria-hidden="true"
               >
-                Histórico completo <ArrowRight size={12} />
-              </Link>
+                <rect width="28" height="28" rx="8" fill="#155DFC" />
+                <path
+                  d="M9.93994 7V21"
+                  strokeWidth="2.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  stroke="white"
+                />
+                <circle
+                  cx="13.9999"
+                  cy="11.06"
+                  r="4.06"
+                  stroke="white"
+                  strokeWidth="2.8"
+                />
+                <circle cx="13.9999" cy="11.0598" r="1.008" fill="white" />
+              </svg>
             </div>
-
-            {matches.length === 0 ? (
-              <div
-                style={{
-                  padding: '24px 16px',
-                  textAlign: 'center',
-                  background: 'var(--muted-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  color: 'var(--muted-foreground)',
-                  fontSize: 12,
-                }}
-              >
-                Nenhuma partida disputada até o momento. Escale 5 titulares em dois clubes
-                para simular um jogo.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {matches.slice(0, 5).map((match) => (
-                  <Link
-                    key={match.id}
-                    to={`/liga/jogos?match=${match.id}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 10px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border)',
-                      textDecoration: 'none',
-                      color: 'inherit',
-                      fontSize: 12,
-                    }}
-                  >
-                    <span style={{ fontWeight: 500 }}>{match.home.club_name}</span>
-                    <span
-                      className="tabular-nums"
-                      style={{
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        background: 'var(--muted)',
-                        borderRadius: 4,
-                      }}
-                    >
-                      {match.home.goals} × {match.away.goals}
-                    </span>
-                    <span style={{ fontWeight: 500 }}>{match.away.club_name}</span>
-                    <span
-                      className="tabular-nums"
-                      style={{ fontSize: 11, color: 'var(--muted-foreground)' }}
-                    >
-                      {formatDateTimePtBr(match.played_at)}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            )}
+            <span className="landing-brand-text">Passe</span>
           </div>
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<Play size={13} />}
-              onClick={() => navigate('/liga/jogos?simular=1')}
+          {/* Dynamic Status Badge (W01 / W02) */}
+          <div className="landing-status-pill">
+            <span className="landing-status-dot" />
+            <strong>Liga Fictícia 2026</strong>
+            <span className="landing-status-sub">
+              {hasMatches && leader
+                ? `· líder: ${leader.club_name}, ${leader.points} ${leader.points === 1 ? 'ponto' : 'pontos'}`
+                : '· nenhuma partida ainda'}
+            </span>
+          </div>
+
+          {/* Title & Description */}
+          <h1 className="landing-title">Gestão da liga, do mercado à classificação</h1>
+          <p className="landing-description">
+            Cadastre jogadores, monte os clubes e negocie com contrato de fidelidade.
+            Depois, escale os titulares e jogue partidas com placar calculado pelos
+            atributos.
+          </p>
+
+          {/* CTA & Keyboard Hint */}
+          <div className="landing-cta-row">
+            <button
+              type="button"
+              className="landing-start-btn"
+              onClick={() => navigate('/jogadores')}
             >
-              Simular partida
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<Trophy size={13} />}
+              <span>Iniciar</span>
+              <ArrowRight size={15} />
+            </button>
+            <span className="landing-kbd-hint">
+              ou tecle <kbd className="landing-kbd">Enter</kbd>
+            </span>
+          </div>
+
+          {/* Metrics Row */}
+          <div className="landing-metrics-row">
+            <span className="landing-metric-item">
+              <Users size={14} />
+              <span>
+                <strong>{totalPlayers}</strong> jogadores
+              </span>
+            </span>
+            <span className="landing-metric-dot">·</span>
+            <span className="landing-metric-item">
+              <Users size={14} />
+              <span>
+                <strong>{freePlayersCount}</strong> livres
+              </span>
+            </span>
+            <span className="landing-metric-dot">·</span>
+            <span className="landing-metric-item">
+              <Shield size={14} />
+              <span>
+                <strong>{clubs.length}</strong> clubes
+              </span>
+            </span>
+            <span className="landing-metric-dot">·</span>
+            <span className="landing-metric-item">
+              <Swords size={14} />
+              <span>
+                <strong>{matches.length}</strong>{' '}
+                {matches.length === 1 ? 'partida' : 'partidas'}
+              </span>
+            </span>
+            <span className="landing-metric-dot">·</span>
+            <span className="landing-metric-item">
+              <Clock size={14} />
+              <span>Não precisa de login</span>
+            </span>
+          </div>
+
+          {/* 6 Step Cards */}
+          <div className="landing-steps-row">
+            {/* 01 Jogadores */}
+            <div
+              className="landing-step-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate('/jogadores')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') navigate('/jogadores');
+              }}
+            >
+              <div className="landing-step-top">
+                <span className="landing-step-icon">
+                  <Users size={16} />
+                </span>
+                <span className="landing-step-num">01</span>
+              </div>
+              <div className="landing-step-title">Jogadores</div>
+              <div className="landing-step-desc">
+                Nascem livres e Apto; o valor de mercado vem da condição, agilidade e
+                idade.
+              </div>
+            </div>
+
+            <span className="landing-step-arrow">
+              <ChevronRight size={14} />
+            </span>
+
+            {/* 02 Clubes */}
+            <div
+              className="landing-step-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate('/clubes')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') navigate('/clubes');
+              }}
+            >
+              <div className="landing-step-top">
+                <span className="landing-step-icon">
+                  <Shield size={16} />
+                </span>
+                <span className="landing-step-num">02</span>
+              </div>
+              <div className="landing-step-title">Clubes</div>
+              <div className="landing-step-desc">
+                Começam com 300,00 em caixa e sem jogadores.
+              </div>
+            </div>
+
+            <span className="landing-step-arrow">
+              <ChevronRight size={14} />
+            </span>
+
+            {/* 03 Compra */}
+            <div
+              className="landing-step-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate('/jogadores')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') navigate('/jogadores');
+              }}
+            >
+              <div className="landing-step-top">
+                <span className="landing-step-icon">
+                  <ShoppingCart size={16} />
+                </span>
+                <span className="landing-step-num">03</span>
+              </div>
+              <div className="landing-step-title">Compra</div>
+              <div className="landing-step-desc">
+                Valor + taxa, até 50% do caixa, com contrato de fidelidade.
+              </div>
+            </div>
+
+            <span className="landing-step-arrow">
+              <ChevronRight size={14} />
+            </span>
+
+            {/* 04 Venda */}
+            <div
+              className="landing-step-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate('/clubes')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') navigate('/clubes');
+              }}
+            >
+              <div className="landing-step-top">
+                <span className="landing-step-icon">
+                  <ArrowRightLeft size={16} />
+                </span>
+                <span className="landing-step-num">04</span>
+              </div>
+              <div className="landing-step-title">Venda</div>
+              <div className="landing-step-desc">
+                Multa antes do fim da fidelidade e comissão sobre o lucro.
+              </div>
+            </div>
+
+            <span className="landing-step-arrow">
+              <ChevronRight size={14} />
+            </span>
+
+            {/* 05 Histórico */}
+            <div
+              className="landing-step-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate('/clubes')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') navigate('/clubes');
+              }}
+            >
+              <div className="landing-step-top">
+                <span className="landing-step-icon">
+                  <History size={16} />
+                </span>
+                <span className="landing-step-num">05</span>
+              </div>
+              <div className="landing-step-title">Histórico</div>
+              <div className="landing-step-desc">
+                Toda compra e venda fica registrada, com totais e CSV.
+              </div>
+            </div>
+
+            <span className="landing-step-arrow">
+              <ChevronRight size={14} />
+            </span>
+
+            {/* 06 Liga */}
+            <div
+              className="landing-step-card"
+              role="button"
+              tabIndex={0}
               onClick={() => navigate('/liga/classificacao')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') navigate('/liga/classificacao');
+              }}
             >
-              Ver classificação
-            </Button>
+              <div className="landing-step-top">
+                <span className="landing-step-icon">
+                  <Trophy size={16} />
+                </span>
+                <span className="landing-step-num">06</span>
+              </div>
+              <div className="landing-step-title">Liga</div>
+              <div className="landing-step-desc">
+                Escale 5 titulares e jogue partidas que entram na classificação.
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Note */}
+          <div className="landing-footer-text">
+            <Clock size={13} />
+            <span>Liga Fictícia 2026 · Horário de Brasília (UTC-3)</span>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };

@@ -1,6 +1,14 @@
 import React, { useCallback, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { History, LayoutGrid, Shirt, ShoppingCart } from 'lucide-react';
+import {
+  ArrowLeft,
+  History,
+  Home,
+  LayoutGrid,
+  ShieldAlert,
+  Shirt,
+  ShoppingCart,
+} from 'lucide-react';
 import type { PlayerResponse } from '../types/api';
 import { clubsService } from '../services/clubsService';
 import { useAsyncResource } from '../hooks/useAsyncResource';
@@ -80,8 +88,52 @@ export const ClubDetailPage: React.FC = () => {
     },
   ];
 
+  if (clubResource.isLoading) {
+    return (
+      <div className="table-state-container" style={{ padding: '80px 20px' }}>
+        <div className="table-spinner" />
+        <div className="cell-muted">Carregando detalhes do clube...</div>
+      </div>
+    );
+  }
+
+  if (!isValidId || clubResource.error || !club) {
+    return (
+      <div className="not-found-card-wrapper">
+        <div className="not-found-card">
+          <div className="not-found-icon-wrap club-error">
+            <ShieldAlert size={36} color="var(--danger)" />
+          </div>
+          <span className="not-found-code-badge">Erro 404 · Não encontrado</span>
+          <h1 className="not-found-title">Clube não encontrado</h1>
+          <p className="not-found-description">
+            O clube solicitado com identificador <strong>#{id}</strong> não foi encontrado
+            na base de dados da liga ou o endereço digitado na barra de navegação é
+            inválido.
+          </p>
+          <div className="not-found-actions">
+            <Button
+              variant="primary"
+              leftIcon={<ArrowLeft size={14} />}
+              onClick={() => navigate('/clubes')}
+            >
+              Voltar para Clubes
+            </Button>
+            <Button
+              variant="secondary"
+              leftIcon={<Home size={14} />}
+              onClick={() => navigate('/')}
+            >
+              Ir para o início
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <>
       <PageHeader
         icon={<span>{displayAcronym}</span>}
         iconVariant="neutral"
@@ -192,6 +244,6 @@ export const ClubDetailPage: React.FC = () => {
         onClose={() => setConditionPlayer(null)}
         onSuccess={clubResource.reload}
       />
-    </div>
+    </>
   );
 };

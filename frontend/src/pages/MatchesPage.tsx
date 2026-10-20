@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, Play, Swords } from 'lucide-react';
 import type { MatchDetail, MatchSummary } from '../types/api';
 import { leagueService } from '../services/leagueService';
@@ -11,10 +11,10 @@ import { Badge } from '../components/ui/Badge';
 import { ClubShield } from '../components/ui/ClubShield';
 import { DataTable, type DataTableColumn } from '../components/ui/DataTable';
 import { SimulateMatchModal } from '../components/modals/SimulateMatchModal';
-import { MatchDetailModal } from '../components/modals/MatchDetailModal';
 import { formatDateTimePtBr } from '../utils/formatters';
 
 export const MatchesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { clubs } = useLeagueSummary();
 
@@ -24,30 +24,20 @@ export const MatchesPage: React.FC = () => {
   const [isSimulateOpen, setIsSimulateOpen] = useState<boolean>(
     () => searchParams.get('simular') === '1'
   );
-  const [selectedMatchId, setSelectedMatchId] = useState<number | null>(() => {
-    const m = searchParams.get('match');
-    return m ? Number(m) : null;
-  });
-  const [latestSimulatedMatch, setLatestSimulatedMatch] = useState<MatchDetail | null>(
-    null
-  );
 
-  // Clear query params if 'simular' or 'match' was set
+  // Clear query params if 'simular' was set or redirect if 'match' was set
   useEffect(() => {
-    let changed = false;
-    const next = new URLSearchParams(searchParams);
+    const matchParam = searchParams.get('match');
+    if (matchParam) {
+      navigate(`/liga/jogos/${matchParam}`);
+      return;
+    }
     if (searchParams.get('simular') === '1') {
+      const next = new URLSearchParams(searchParams);
       next.delete('simular');
-      changed = true;
-    }
-    if (searchParams.get('match')) {
-      next.delete('match');
-      changed = true;
-    }
-    if (changed) {
       setSearchParams(next, { replace: true });
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, navigate]);
 
   const fetchMatches = useCallback(async () => {
     const filterId = clubFilter ? Number(clubFilter) : undefined;
@@ -63,9 +53,7 @@ export const MatchesPage: React.FC = () => {
 
   const handleSimulateSuccess = (match: MatchDetail) => {
     setIsSimulateOpen(false);
-    setLatestSimulatedMatch(match);
-    setSelectedMatchId(match.id);
-    void reload();
+    navigate(`/liga/jogos/${match.id}?nova=1`);
   };
 
   const getResultBadge = (result: string) => {
@@ -151,8 +139,7 @@ export const MatchesPage: React.FC = () => {
           leftIcon={<Eye size={13} />}
           onClick={(e) => {
             e.stopPropagation();
-            setLatestSimulatedMatch(null);
-            setSelectedMatchId(row.id);
+            navigate(`/liga/jogos/${row.id}`);
           }}
         >
           Duelos
@@ -222,8 +209,7 @@ export const MatchesPage: React.FC = () => {
           </Button>
         }
         onRowClick={(row) => {
-          setLatestSimulatedMatch(null);
-          setSelectedMatchId(row.id);
+          navigate(`/liga/jogos/${row.id}`);
         }}
       />
 
@@ -236,16 +222,6 @@ export const MatchesPage: React.FC = () => {
         open={isSimulateOpen}
         onClose={() => setIsSimulateOpen(false)}
         onSuccess={handleSimulateSuccess}
-      />
-
-      <MatchDetailModal
-        open={selectedMatchId !== null}
-        matchId={selectedMatchId}
-        initialMatch={latestSimulatedMatch}
-        onClose={() => {
-          setSelectedMatchId(null);
-          setLatestSimulatedMatch(null);
-        }}
       />
     </>
   );

@@ -113,7 +113,7 @@ interface LeagueSummaryContextValue {
   isCreateClubModalOpen: boolean;
 }
 
-const LeagueSummaryContext = createContext<LeagueSummaryContextValue | undefined>(
+export const LeagueSummaryContext = createContext<LeagueSummaryContextValue | undefined>(
   undefined
 );
 

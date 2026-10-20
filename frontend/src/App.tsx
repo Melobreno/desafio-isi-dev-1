@@ -8,6 +8,7 @@ import { ClubsPage } from './pages/ClubsPage';
 import { ClubDetailPage } from './pages/ClubDetailPage';
 import { StandingsPage } from './pages/StandingsPage';
 import { MatchesPage } from './pages/MatchesPage';
+import { MatchDetailPage } from './pages/MatchDetailPage';
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
               <Route path="/clubes/:id" element={<ClubDetailPage />} />
               <Route path="/liga/classificacao" element={<StandingsPage />} />
               <Route path="/liga/jogos" element={<MatchesPage />} />
+              <Route path="/liga/jogos/:id" element={<MatchDetailPage />} />
               <Route path="*" element={<Navigate to="/jogadores" replace />} />
             </Route>
           </Routes>

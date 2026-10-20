@@ -6,6 +6,7 @@ import {
   HeartPulse,
   Pencil,
   Plus,
+  SearchX,
   ShoppingCart,
   Trash2,
   Users,
@@ -57,6 +58,8 @@ export const PlayersPage: React.FC = () => {
 
   const filterState = usePlayerFilters();
   const {
+    appliedSearch,
+    clearSearch,
     criteria,
     updateCriteria,
     setPage,
@@ -358,14 +361,27 @@ export const PlayersPage: React.FC = () => {
         isLoading={isLoading}
         error={error}
         onRetry={clearAll}
-        emptyTitle="Nenhum jogador encontrado"
+        emptyIcon={appliedSearch ? <SearchX size={24} /> : undefined}
+        emptyTitle={
+          appliedSearch
+            ? `Nenhum jogador encontrado para "${appliedSearch}"`
+            : hasAnyActiveFilter
+              ? 'Nenhum jogador encontrado com os filtros aplicados'
+              : 'Nenhum jogador cadastrado'
+        }
         emptyDescription={
-          hasAnyActiveFilter
-            ? 'Nenhum jogador corresponde aos filtros selecionados. Limpe os filtros ou ajuste a busca.'
-            : 'Ainda não há jogadores cadastrados na liga. Cadastre o primeiro jogador para começar.'
+          appliedSearch
+            ? 'Nenhum jogador corresponde ao nome pesquisado. Verifique a ortografia ou limpe a busca.'
+            : hasAnyActiveFilter
+              ? 'Nenhum jogador atende à combinação de filtros selecionada. Ajuste as opções ou limpe os filtros.'
+              : 'Ainda não há jogadores cadastrados na liga. Cadastre o primeiro jogador para começar.'
         }
         emptyAction={
-          hasAnyActiveFilter ? (
+          appliedSearch ? (
+            <Button variant="secondary" size="sm" onClick={clearSearch}>
+              Limpar busca
+            </Button>
+          ) : hasAnyActiveFilter ? (
             <Button variant="secondary" size="sm" onClick={clearAll}>
               Limpar filtros
             </Button>
