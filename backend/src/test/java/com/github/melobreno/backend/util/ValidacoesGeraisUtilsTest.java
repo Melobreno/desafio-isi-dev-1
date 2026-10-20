@@ -42,23 +42,23 @@ class ValidacoesGeraisUtilsTest {
 
     @Test
     void idUrlAceitaSomenteInteirosPositivos() {
-        assertEquals(42, ValidacoesGeraisUtils.idUrl("42"));
+        assertEquals(42, ValidacoesGeraisUtils.validarIdRota("42", "Jogador não encontrado."));
 
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> ValidacoesGeraisUtils.idUrl("0"));
+                () -> ValidacoesGeraisUtils.validarIdRota("0", "Jogador não encontrado."));
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
 
         assertThrows(BusinessException.class,
-                () -> ValidacoesGeraisUtils.idUrl("2147483648"));
+                () -> ValidacoesGeraisUtils.validarIdRota("2147483648", "Jogador não encontrado."));
     }
 
     @Test
     void inteiroPositivoRejeitaZerosIniciaisESinais() {
-        assertEquals(42, ValidacoesGeraisUtils.inteiroPositivo("page", "42"));
+        assertEquals(42, ValidacoesGeraisUtils.validarInteiroPositivoQuery("page", "42"));
         assertThrows(BadRequestException.class,
-                () -> ValidacoesGeraisUtils.inteiroPositivo("page", "042"));
+                () -> ValidacoesGeraisUtils.validarInteiroPositivoQuery("page", "042"));
         assertThrows(BadRequestException.class,
-                () -> ValidacoesGeraisUtils.inteiroPositivo("page", "+42"));
+                () -> ValidacoesGeraisUtils.validarInteiroPositivoQuery("page", "+42"));
     }
 
     @Test
@@ -96,3 +96,4 @@ class ValidacoesGeraisUtilsTest {
                 .compareTo(ValidacoesGeraisUtils.normalizarParaOrdenacao("Ana-Maria")) < 0);
     }
 }
+
