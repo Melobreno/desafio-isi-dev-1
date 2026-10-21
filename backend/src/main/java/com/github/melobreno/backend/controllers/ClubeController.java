@@ -5,11 +5,13 @@ import com.github.melobreno.backend.dto.CriarClubeRequestDto;
 import com.github.melobreno.backend.service.ClubeServices;
 import com.github.melobreno.backend.util.ValidacoesGeraisUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +28,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/clubs")
-@io.swagger.v3.oas.annotations.tags.Tag(name = "Clubes", description = "Operações relacionadas a criação, listagem e consulta detalhada de clubes e elencos")
+@Tag(name = "Clubes", description = "Operações relacionadas a criação, listagem e consulta detalhada de clubes e elencos")
 public class ClubeController {
 
     private final ClubeServices clubeServices;
@@ -75,8 +77,9 @@ public class ClubeController {
             @ApiResponse(responseCode = "400", description = "Parâmetro sort inválido")
     })
     public ResponseEntity<List<ClubeDto>> listarClubes(
-            @io.swagger.v3.oas.annotations.Parameter(description = "Critério de ordenação: name (padrão), net_worth_asc ou net_worth_desc", example = "name")
-            @RequestParam(required = false) String sort) {
+            @Parameter(description = "Critério de ordenação: name (padrão), net_worth_asc ou net_worth_desc", example = "name")
+            @RequestParam(required = false) String sort
+    ) {
         return ResponseEntity.ok(clubeServices.listarClubes(sort));
     }
 
@@ -91,8 +94,10 @@ public class ClubeController {
             @ApiResponse(responseCode = "404", description = "Clube não encontrado")
     })
     public ResponseEntity<ClubeDto> buscarClube(
-            @io.swagger.v3.oas.annotations.Parameter(description = "ID do clube", example = "1")
-            @PathVariable String id) {
-        return ResponseEntity.ok(clubeServices.buscaClube(ValidacoesGeraisUtils.idUrl(id)));
+            @Parameter(description = "ID do clube", example = "1")
+            @PathVariable String id
+    ) {
+        int clubeId = ValidacoesGeraisUtils.validarIdRota(id, "Clube não encontrado.");
+        return ResponseEntity.ok(clubeServices.buscaClube(clubeId));
     }
 }

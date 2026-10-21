@@ -25,7 +25,7 @@ import java.time.OffsetDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Jogador {
+public class Jogador implements Comparable<Jogador> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -86,4 +86,14 @@ public class Jogador {
 
     @Column(name = "atualizado_em", nullable = false)
     private OffsetDateTime atualizadoEm;
+
+    @Override
+    public int compareTo(Jogador outro) {
+        if (outro == null) return 1;
+        int compPos = Integer.compare(this.posicao.ordinal(), outro.posicao.ordinal());
+        if (compPos != 0) return compPos;
+        int compNome = this.nome.compareToIgnoreCase(outro.nome);
+        if (compNome != 0) return compNome;
+        return Integer.compare(this.id != null ? this.id : 0, outro.id != null ? outro.id : 0);
+    }
 }

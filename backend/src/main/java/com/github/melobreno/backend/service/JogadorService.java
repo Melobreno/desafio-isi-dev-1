@@ -1,11 +1,20 @@
 package com.github.melobreno.backend.service;
 
-import com.github.melobreno.backend.dto.*;
+import com.github.melobreno.backend.dto.AlterarCondicaoRequestDto;
+import com.github.melobreno.backend.dto.AtualizarJogadorRequestDto;
+import com.github.melobreno.backend.dto.ContratoDto;
+import com.github.melobreno.backend.dto.CriarJogadorRequestDto;
+import com.github.melobreno.backend.dto.CriarJogadorResponseDto;
+import com.github.melobreno.backend.dto.JogadorDto;
+import com.github.melobreno.backend.dto.MetadadosPaginaDto;
+import com.github.melobreno.backend.dto.PaginaJogadoresDto;
 import com.github.melobreno.backend.exceptions.BusinessException;
 import com.github.melobreno.backend.model.CondicaoJogador;
+import com.github.melobreno.backend.model.Contrato;
 import com.github.melobreno.backend.model.Jogador;
 import com.github.melobreno.backend.model.PosicaoJogador;
 import com.github.melobreno.backend.repository.ClubeRepository;
+import com.github.melobreno.backend.repository.EscalacaoRepository;
 import com.github.melobreno.backend.repository.JogadorRepository;
 import com.github.melobreno.backend.util.ValidacoesGeraisUtils;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +38,8 @@ public class JogadorService {
     private static final BigDecimal VALOR_MINIMO = new BigDecimal("1.00");
     private final JogadorRepository jogadorRepository;
     private final ClubeRepository clubeRepository;
-    private final com.github.melobreno.backend.repository.EscalacaoRepository escalacaoRepository;
+    private final EscalacaoRepository escalacaoRepository;
 
-    /**
-     * RN06 - Cadastra um jogador livre e APTO, valida seus indicadores e grava
-     * o valor base calculado uma única vez a partir do overall, potencial e idade.
-     */
     @Transactional
     public CriarJogadorResponseDto criarJogador(CriarJogadorRequestDto request) {
         if (request == null) {
@@ -45,7 +50,7 @@ public class JogadorService {
         PosicaoJogador posicao = ValidacoesGeraisUtils.validaEnum("position", PosicaoJogador.class, request.position());
         validarAgilidade(request.agility(), request.age());
         validarIdade(request.age());
-        validarAtributos(request.pace(), request.shooting(), request.passing(),request.dribbling(), request.defending(), request.physical());
+        validarAtributos(request.pace(), request.shooting(), request.passing(), request.dribbling(), request.defending(), request.physical());
         validarPotencial(request.potential(), request.age(), request.pace(), request.shooting(), request.passing(), request.dribbling(), request.defending(), request.physical());
 
         Jogador jogador = new Jogador();
@@ -69,19 +74,11 @@ public class JogadorService {
         return paraRespostaCriacao(jogadorRepository.save(jogador));
     }
 
-    /**
-     * RN05, RN06 e RN09 - Consulta somente jogadores ativos e retorna os valores
-     * de mercado e overall calculados para o momento da consulta.
-     */
     @Transactional(readOnly = true)
     public JogadorDto buscarJogadorId(Integer id) {
         return paraDto(buscarAtivo(id));
     }
 
-    /**
-     * RN08 e RN09 - Altera apenas nome, posição, agilidade e idade de um jogador
-     * ativo; não reduz a idade nem permite mudar a posição enquanto estiver em clube.
-     */
     @Transactional
     public JogadorDto atualizarJogador(Integer id, AtualizarJogadorRequestDto request) {
         if (request == null) {
@@ -108,10 +105,6 @@ public class JogadorService {
         return paraDto(jogadorRepository.save(jogador));
     }
 
-    /**
-     * RN09 - A alteração só pode localizar jogadores ativos. Regra de transição
-     * da condição: um jogador DOENTE não pode voltar diretamente para APTO.
-     */
     @Transactional
     public JogadorDto alterarCondicao(Integer id, AlterarCondicaoRequestDto request) {
         if (request == null || request.condition() == null) {
@@ -125,17 +118,12 @@ public class JogadorService {
 
         jogador.setCondicao(condicao);
         if (condicao == CondicaoJogador.DOENTE) {
-            // RN19 item 5 - Titular que passa a DOENTE sai da escalação na mesma operação
             escalacaoRepository.deleteById_JogadorId(jogador.getId());
         }
         jogador.setAtualizadoEm(ValidacoesGeraisUtils.agoraBrasilia());
         return paraDto(jogadorRepository.save(jogador));
     }
 
-    /**
-     * RN09 - Faz exclusão lógica somente de jogador livre; os dados permanecem
-     * armazenados e deixam de ser considerados em consultas de jogadores ativos.
-     */
     @Transactional
     public void excluirJogador(Integer id) {
         Jogador jogador = buscarAtivo(id);
@@ -147,50 +135,41 @@ public class JogadorService {
         jogadorRepository.save(jogador);
     }
 
-    /**
-     * RN05, RN06, RN07 e RN09 - Busca, filtra, ordena e pagina jogadores ativos.
-     * Filtros por valor usam valor de mercado; a paginação ocorre após a ordenação.
-     */
     @Transactional(readOnly = true)
     public PaginaJogadoresDto listarJogadores(
-            String search,
-            String position,
-            String condition,
-            Boolean free,
-            Integer clubId,
-            Integer minAge,
-            Integer maxAge,
-            BigDecimal minValue,
-            BigDecimal maxValue,
-            String sort,
-            Integer page,
-            Integer limit
+            String busca,
+            String posicao,
+            String condicao,
+            Boolean livre,
+            Integer clubeId,
+            Integer idadeMinima,
+            Integer idadeMaxima,
+            BigDecimal valorMinimo,
+            BigDecimal valorMaximo,
+            String ordenacao,
+            Integer paginaParam,
+            Integer limiteParam
     ) {
-        validarFiltros(position, condition, free, clubId, minAge, maxAge, minValue, maxValue, page, limit);
-        String buscaNormalizada = validarBusca(search);
-        List<String> criteriosOrdenacao = validarOrdenacao(sort);
+        validarFiltros(posicao, condicao, livre, clubeId, idadeMinima, idadeMaxima, valorMinimo, valorMaximo, paginaParam, limiteParam);
+        String buscaNormalizada = validarBusca(busca);
+        List<String> criteriosOrdenacao = validarOrdenacao(ordenacao);
 
-        if (clubId != null && !clubeRepository.existsById(clubId)) {
+        if (clubeId != null && !clubeRepository.existsById(clubeId)) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "Clube não encontrado.");
         }
 
-        int pagina = page == null ? 1 : page;
-        int tamanhoPagina = limit == null ? 10 : limit;
+        int pagina = paginaParam == null ? 1 : paginaParam;
+        int tamanhoPagina = limiteParam == null ? 10 : limiteParam;
         List<Jogador> filtrados = jogadorRepository.findAllByExcluidoEmIsNull().stream()
-                .filter(jogador -> position == null || jogador.getPosicao().name().equals(position))
-                .filter(jogador -> condition == null || jogador.getCondicao().name().equals(condition))
-                .filter(jogador -> free == null
-                        || free == (jogador.getClube() == null))
-                .filter(jogador -> clubId == null
-                        || jogador.getClube() != null && clubId.equals(jogador.getClube().getId()))
-                .filter(jogador -> minAge == null || jogador.getIdade() >= minAge)
-                .filter(jogador -> maxAge == null || jogador.getIdade() <= maxAge)
-                .filter(jogador -> buscaNormalizada == null
-                        || normalizarBusca(jogador.getNome()).contains(buscaNormalizada))
-                .filter(jogador -> minValue == null
-                        || calcularValorMercado(jogador).compareTo(minValue) >= 0)
-                .filter(jogador -> maxValue == null
-                        || calcularValorMercado(jogador).compareTo(maxValue) <= 0)
+                .filter(jogador -> posicao == null || jogador.getPosicao().name().equals(posicao))
+                .filter(jogador -> condicao == null || jogador.getCondicao().name().equals(condicao))
+                .filter(jogador -> livre == null || livre == (jogador.getClube() == null))
+                .filter(jogador -> clubeId == null || jogador.getClube() != null && clubeId.equals(jogador.getClube().getId()))
+                .filter(jogador -> idadeMinima == null || jogador.getIdade() >= idadeMinima)
+                .filter(jogador -> idadeMaxima == null || jogador.getIdade() <= idadeMaxima)
+                .filter(jogador -> buscaNormalizada == null || normalizarBusca(jogador.getNome()).contains(buscaNormalizada))
+                .filter(jogador -> valorMinimo == null || calcularValorMercado(jogador).compareTo(valorMinimo) >= 0)
+                .filter(jogador -> valorMaximo == null || calcularValorMercado(jogador).compareTo(valorMaximo) <= 0)
                 .toList();
 
         filtrados = new ArrayList<>(filtrados);
@@ -198,22 +177,17 @@ public class JogadorService {
 
         long total = filtrados.size();
         int totalPaginas = total == 0 ? 0 : (int) ((total + tamanhoPagina - 1) / tamanhoPagina);
-        long inicioInteger = (long) (pagina - 1) * tamanhoPagina;
-        List<JogadorDto> dados = inicioInteger >= total
+        long inicioIndice = (long) (pagina - 1) * tamanhoPagina;
+        List<JogadorDto> dados = inicioIndice >= total
                 ? List.of()
-                : filtrados.subList((int) inicioInteger, (int) Math.min(inicioInteger + tamanhoPagina, total))
+                : filtrados.subList((int) inicioIndice, (int) Math.min(inicioIndice + tamanhoPagina, total))
                         .stream()
                         .map(this::paraDto)
                         .toList();
 
-        return new PaginaJogadoresDto(dados,
-                new MetadadosPaginaDto(pagina, tamanhoPagina, total, totalPaginas));
+        return new PaginaJogadoresDto(dados, new MetadadosPaginaDto(pagina, tamanhoPagina, total, totalPaginas));
     }
 
-    /**
-     * RN09 - Resolve somente jogadores ativos; jogador ausente ou excluído
-     * é tratado como inexistente.
-     */
     private Jogador buscarAtivo(Integer id) {
         if (id == null || id < 1) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "Jogador não encontrado.");
@@ -222,10 +196,6 @@ public class JogadorService {
                 .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "Jogador não encontrado."));
     }
 
-    /**
-     * Valida o nome obrigatório do jogador, seus caracteres, comprimento,
-     * ausência de dígitos e presença de pelo menos duas palavras.
-     */
     private String validarNome(String nome) {
         String normalizado = ValidacoesGeraisUtils.aplicarV4(nome, "name");
         int tamanho = normalizado.codePointCount(0, normalizado.length());
@@ -245,29 +215,19 @@ public class JogadorService {
         return normalizado;
     }
 
-    /**
-     * Valida o limite de idade aceito para cadastro e edição do jogador.
-     */
-    private void validarIdade(Integer age) {
-        if (age == null || age < 16 || age > 45) {
+    private void validarIdade(Integer idade) {
+        if (idade == null || idade < 16 || idade > 45) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "A idade deve estar entre 16 e 45 anos.");
         }
     }
 
-    /**
-     * Valida o limite de agilidade e a restrição aplicada a jogadores com 35 anos ou mais.
-     */
-    private void validarAgilidade(Integer agility, Integer age) {
-        if (agility == null || agility < 1 || agility > 100
-                || age != null && age >= 35 && agility > 85) {
+    private void validarAgilidade(Integer agilidade, Integer idade) {
+        if (agilidade == null || agilidade < 1 || agilidade > 100
+                || idade != null && idade >= 35 && agilidade > 85) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "A agilidade está fora do limite permitido para a idade.");
         }
     }
 
-    /**
-     * RN06 - Valida que os seis atributos estejam entre 1 e 99 e que sua soma
-     * não ultrapasse 480.
-     */
     private void validarAtributos(Integer... atributos) {
         int soma = 0;
         for (Integer atributo : atributos) {
@@ -281,10 +241,6 @@ public class JogadorService {
         }
     }
 
-    /**
-     * RN06 - Valida o potencial e sua relação com o maior atributo; a partir
-     * dos 33 anos, potencial e maior atributo devem ser iguais.
-     */
     private void validarPotencial(Integer potencial, Integer idade, Integer... atributos) {
         if (potencial == null || potencial < 1 || potencial > 99) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "O potencial deve estar entre 1 e 99.");
@@ -299,14 +255,11 @@ public class JogadorService {
         }
     }
 
-    /**
-     * RN07 - Valida a busca pelo nome e normaliza o texto para ignorar caixa e acentos.
-     */
-    private String validarBusca(String search) {
-        if (search == null) {
+    private String validarBusca(String busca) {
+        if (busca == null) {
             return null;
         }
-        String normalizada = normalizarBusca(ValidacoesGeraisUtils.aplicarV4Search(search));
+        String normalizada = normalizarBusca(ValidacoesGeraisUtils.aplicarV4Search(busca));
         int tamanho = normalizada.codePointCount(0, normalizada.length());
         if (tamanho < 2 || tamanho > 100) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "A busca deve ter entre 2 e 100 caracteres.");
@@ -314,63 +267,54 @@ public class JogadorService {
         return normalizada;
     }
 
-    /**
-     * RN07 - Valida enums, combinações de filtros, faixas de idade e valor,
-     * além dos limites de paginação.
-     */
     private void validarFiltros(
-            String position,
-            String condition,
-            Boolean free,
-            Integer clubId,
-            Integer minAge,
-            Integer maxAge,
-            BigDecimal minValue,
-            BigDecimal maxValue,
-            Integer page,
-            Integer limit
+            String posicao,
+            String condicao,
+            Boolean livre,
+            Integer clubeId,
+            Integer idadeMinima,
+            Integer idadeMaxima,
+            BigDecimal valorMinimo,
+            BigDecimal valorMaximo,
+            Integer pagina,
+            Integer limite
     ) {
-        if (position != null) {
-            ValidacoesGeraisUtils.validaEnum("position", PosicaoJogador.class, position);
+        if (posicao != null) {
+            ValidacoesGeraisUtils.validaEnum("position", PosicaoJogador.class, posicao);
         }
-        if (condition != null) {
-            ValidacoesGeraisUtils.validaEnum("condition", CondicaoJogador.class, condition);
+        if (condicao != null) {
+            ValidacoesGeraisUtils.validaEnum("condition", CondicaoJogador.class, condicao);
         }
-        if (clubId != null && clubId < 1 || free != null && free && clubId != null) {
+        if (clubeId != null && clubeId < 1 || livre != null && livre && clubeId != null) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "A combinação dos filtros free e club_id é inválida.");
         }
-        if (minAge != null && (minAge < 16 || minAge > 45)
-                || maxAge != null && (maxAge < 16 || maxAge > 45)
-                || minAge != null && maxAge != null && minAge > maxAge) {
+        if (idadeMinima != null && (idadeMinima < 16 || idadeMinima > 45)
+                || idadeMaxima != null && (idadeMaxima < 16 || idadeMaxima > 45)
+                || idadeMinima != null && idadeMaxima != null && idadeMinima > idadeMaxima) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "A faixa de idade informada é inválida.");
         }
         BigDecimal limiteValor = new BigDecimal("550");
-        if (minValue != null && (minValue.signum() < 0 || minValue.compareTo(limiteValor) > 0
-                || minValue.scale() > 2)
-                || maxValue != null && (maxValue.signum() < 0 || maxValue.compareTo(limiteValor) > 0
-                || maxValue.scale() > 2)
-                || minValue != null && maxValue != null && minValue.compareTo(maxValue) > 0) {
+        if (valorMinimo != null && (valorMinimo.signum() < 0 || valorMinimo.compareTo(limiteValor) > 0
+                || valorMinimo.scale() > 2)
+                || valorMaximo != null && (valorMaximo.signum() < 0 || valorMaximo.compareTo(limiteValor) > 0
+                || valorMaximo.scale() > 2)
+                || valorMinimo != null && valorMaximo != null && valorMinimo.compareTo(valorMaximo) > 0) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "A faixa de valor de mercado informada é inválida.");
         }
-        if (page != null && page < 1 || limit != null && (limit < 1 || limit > 50)) {
+        if (pagina != null && pagina < 1 || limite != null && (limite < 1 || limite > 50)) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "A paginação informada é inválida.");
         }
     }
 
-    /**
-     * RN07 - Aceita até dois critérios de ordenação permitidos, sem repetição;
-     * sem critério informado, usa nome.
-     */
-    private List<String> validarOrdenacao(String sort) {
-        if (sort == null) {
+    private List<String> validarOrdenacao(String ordenacao) {
+        if (ordenacao == null) {
             return List.of("name");
         }
-        String[] criterios = sort.split(",", -1);
-        if (criterios.length > 2 || sort.isEmpty()) {
+        String[] criterios = ordenacao.split(",", -1);
+        if (criterios.length > 2 || ordenacao.isEmpty()) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "O parâmetro sort aceita no máximo dois critérios.");
         }
-        List<String> permitidos = List.of("name", "value_asc", "value_desc",
-                "age_asc", "age_desc", "position");
+        List<String> permitidos = List.of("name", "value_asc", "value_desc", "age_asc", "age_desc", "position");
         List<String> resultado = List.of(criterios);
         if (resultado.stream().anyMatch(criterio -> !permitidos.contains(criterio))
                 || resultado.stream().distinct().count() != resultado.size()) {
@@ -379,16 +323,12 @@ public class JogadorService {
         return resultado;
     }
 
-    /**
-     * RN07 - Compõe os critérios informados e desempata sempre por nome e id crescente.
-     */
     private Comparator<Jogador> comparador(List<String> criterios) {
         Comparator<Jogador> comparator = (primeiro, segundo) -> 0;
         for (String criterio : criterios) {
             Comparator<Jogador> criterioComparator = switch (criterio) {
                 case "value_asc" -> Comparator.comparing(this::calcularValorMercado);
-                case "value_desc" -> Comparator.comparing(
-                        this::calcularValorMercado).reversed();
+                case "value_desc" -> Comparator.comparing(this::calcularValorMercado).reversed();
                 case "age_asc" -> Comparator.comparing(Jogador::getIdade);
                 case "age_desc" -> Comparator.comparing(Jogador::getIdade).reversed();
                 case "position" -> Comparator.comparing(Jogador::getPosicao);
@@ -396,21 +336,13 @@ public class JogadorService {
             };
             comparator = comparator.thenComparing(criterioComparator);
         }
-        return comparator.thenComparing(this::compararNomes)
-                .thenComparing(Jogador::getId);
+        return comparator.thenComparing(this::compararNomes).thenComparing(Jogador::getId);
     }
 
-    /**
-     * RN07 - Compara nomes sem diferenciar acentos ou maiúsculas e minúsculas.
-     */
     private int compararNomes(Jogador primeiro, Jogador segundo) {
         return compararUnicode(normalizarBusca(primeiro.getNome()), normalizarBusca(segundo.getNome()));
     }
 
-    /**
-     * RN07 - Compara nomes por pontos de código Unicode para obter uma ordem
-     * consistente também com caracteres fora do conjunto ASCII.
-     */
     private int compararUnicode(String primeiro, String segundo) {
         int[] caracteresPrimeiro = primeiro.codePoints().toArray();
         int[] caracteresSegundo = segundo.codePoints().toArray();
@@ -424,10 +356,6 @@ public class JogadorService {
         return Integer.compare(caracteresPrimeiro.length, caracteresSegundo.length);
     }
 
-    /**
-     * RN06 - Calcula e arredonda o valor base a partir do overall, aplicando
-     * o bônus de jovem promessa e o piso de 1,00.
-     */
     private BigDecimal calcularValorBase(Jogador jogador) {
         int overall = calcularOverall(jogador);
         BigDecimal parteOverall;
@@ -450,10 +378,6 @@ public class JogadorService {
         return valor.compareTo(VALOR_MINIMO) < 0 ? VALOR_MINIMO : valor;
     }
 
-    /**
-     * RN06 - Calcula o overall pela soma ponderada dos atributos conforme
-     * a posição, arredondando para o inteiro mais próximo com meio para cima.
-     */
     public int calcularOverall(Jogador jogador) {
         int[] atributos = {jogador.getVelocidade(), jogador.getFinalizacao(), jogador.getPasse(),
                 jogador.getDrible(), jogador.getDefesa(), jogador.getFisico()};
@@ -466,10 +390,6 @@ public class JogadorService {
                 .intValueExact();
     }
 
-    /**
-     * RN02 a RN05 - Calcula o valor de mercado usando condição, ajuste de
-     * agilidade, idade, teto de desconto, arredondamento e piso.
-     */
     public BigDecimal calcularValorMercado(Jogador jogador) {
         int descontoCondicao = jogador.getCondicao().descontoMercadoEmDecimos();
         if (descontoCondicao > 0) {
@@ -488,17 +408,26 @@ public class JogadorService {
         return valor.compareTo(VALOR_MINIMO) < 0 ? VALOR_MINIMO : valor;
     }
 
-    /**
-     * RN05 e RN06 - Constrói a resposta com valor de mercado e overall
-     * calculados, sem persistir esses valores calculados.
-     */
+    public static Comparator<Jogador> comparadorElenco() {
+        return Comparator.comparing((Jogador j) -> ordemPosicaoElenco(j.getPosicao()))
+                .thenComparing(j -> ValidacoesGeraisUtils.normalizarParaOrdenacao(j.getNome()))
+                .thenComparing(Jogador::getId);
+    }
+
+    public static int ordemPosicaoElenco(PosicaoJogador posicao) {
+        return switch (posicao) {
+            case GOL -> 1;
+            case ZAG -> 2;
+            case LAT -> 3;
+            case MEI -> 4;
+            case ATA -> 5;
+        };
+    }
+
     public JogadorDto paraDto(Jogador jogador) {
         return paraDto(jogador, null);
     }
 
-    /**
-     * Constrói a resposta com valor de mercado, overall e contrato associado.
-     */
     public JogadorDto paraDto(Jogador jogador, ContratoDto contrato) {
         return new JogadorDto(
                 jogador.getId(),
@@ -522,10 +451,6 @@ public class JogadorService {
         );
     }
 
-    /**
-     * RN06 - Monta a resposta do cadastro a partir dos dados salvos e dos
-     * valores calculados para apresentação.
-     */
     private CriarJogadorResponseDto paraRespostaCriacao(Jogador jogador) {
         JogadorDto dto = paraDto(jogador);
         return new CriarJogadorResponseDto(
@@ -536,10 +461,6 @@ public class JogadorService {
         );
     }
 
-    /**
-     * RN07 - Normaliza texto de busca e comparação, removendo acentos e
-     * ignorando diferenças entre maiúsculas e minúsculas.
-     */
     private String normalizarBusca(String valor) {
         return Normalizer.normalize(valor, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}+", "")

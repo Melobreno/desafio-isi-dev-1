@@ -6,21 +6,28 @@ import com.github.melobreno.backend.dto.TransacaoDto;
 import com.github.melobreno.backend.service.MercadoService;
 import com.github.melobreno.backend.util.ValidacoesGeraisUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@io.swagger.v3.oas.annotations.tags.Tag(name = "Mercado", description = "Operações do mercado de jogadores, compras, vendas, histórico e exportação CSV")
+@Tag(name = "Mercado", description = "Operações do mercado de jogadores, compras, vendas, histórico e exportação CSV")
 public class MercadoController {
 
     private final MercadoService mercadoService;
@@ -54,10 +61,12 @@ public class MercadoController {
             @ApiResponse(responseCode = "409", description = "Conflito com regras de compra (caixa insuficiente, elenco cheio, jogador já pertence a clube ou recompra proibida)")
     })
     public ResponseEntity<TransacaoDto> comprarJogador(
-            @io.swagger.v3.oas.annotations.Parameter(description = "ID do jogador a ser comprado", example = "2")
+            @Parameter(description = "ID do jogador a ser comprado", example = "2")
             @PathVariable String id,
-            @RequestBody ComprarJogadorRequestDto request) {
-        return ResponseEntity.ok(mercadoService.comprarJogador(ValidacoesGeraisUtils.idUrl(id), request));
+            @RequestBody ComprarJogadorRequestDto request
+    ) {
+        int jogadorId = ValidacoesGeraisUtils.validarIdRota(id, "Jogador não encontrado.");
+        return ResponseEntity.ok(mercadoService.comprarJogador(jogadorId, request));
     }
 
     @PostMapping("/players/{id}/sell")
@@ -72,9 +81,11 @@ public class MercadoController {
             @ApiResponse(responseCode = "409", description = "Jogador livre (não pertence a nenhum clube)")
     })
     public ResponseEntity<TransacaoDto> venderJogador(
-            @io.swagger.v3.oas.annotations.Parameter(description = "ID do jogador a ser vendido", example = "2")
-            @PathVariable String id) {
-        return ResponseEntity.ok(mercadoService.venderJogador(ValidacoesGeraisUtils.idUrl(id)));
+            @Parameter(description = "ID do jogador a ser vendido", example = "2")
+            @PathVariable String id
+    ) {
+        int jogadorId = ValidacoesGeraisUtils.validarIdRota(id, "Jogador não encontrado.");
+        return ResponseEntity.ok(mercadoService.venderJogador(jogadorId));
     }
 
     @GetMapping("/clubs/{id}/transactions")
@@ -89,17 +100,19 @@ public class MercadoController {
             @ApiResponse(responseCode = "404", description = "Clube ou jogador inexistente")
     })
     public ResponseEntity<HistoricoTransacoesDto> listarTransacoes(
-            @io.swagger.v3.oas.annotations.Parameter(description = "ID do clube", example = "1")
+            @Parameter(description = "ID do clube", example = "1")
             @PathVariable String id,
-            @io.swagger.v3.oas.annotations.Parameter(description = "Filtro por tipo: COMPRA, VENDA ou COMPRA,VENDA", example = "VENDA")
+            @Parameter(description = "Filtro por tipo: COMPRA, VENDA ou COMPRA,VENDA", example = "VENDA")
             @RequestParam(required = false) String type,
-            @io.swagger.v3.oas.annotations.Parameter(description = "Filtro por ID do jogador", example = "2")
-            @RequestParam(name = "player_id", required = false) String playerId) {
-        Integer parsedPlayerId = playerId == null ? null : ValidacoesGeraisUtils.inteiroPositivo("player_id", playerId);
-        return ResponseEntity.ok(mercadoService.listarTransacoes(ValidacoesGeraisUtils.idUrl(id), type, parsedPlayerId));
+            @Parameter(description = "Filtro por ID do jogador", example = "2")
+            @RequestParam(name = "player_id", required = false) String playerId
+    ) {
+        int clubeId = ValidacoesGeraisUtils.validarIdRota(id, "Clube não encontrado.");
+        Integer idJogador = playerId == null ? null : ValidacoesGeraisUtils.validarInteiroPositivoQuery("player_id", playerId);
+        return ResponseEntity.ok(mercadoService.listarTransacoes(clubeId, type, idJogador));
     }
 
-    @GetMapping(value = "/clubs/{id}/transactions/export", produces = "text/csv")
+    @GetMapping("/clubs/{id}/transactions/export")
     @Operation(
             summary = "Exporta o histórico de transações de um clube em formato CSV",
             description = "Gera um arquivo CSV com separador ';' e valores monetários formatados em vírgula, com os mesmos filtros da consulta."
@@ -111,14 +124,16 @@ public class MercadoController {
             @ApiResponse(responseCode = "404", description = "Clube ou jogador inexistente")
     })
     public ResponseEntity<byte[]> exportarTransacoes(
-            @io.swagger.v3.oas.annotations.Parameter(description = "ID do clube", example = "1")
+            @Parameter(description = "ID do clube", example = "1")
             @PathVariable String id,
-            @io.swagger.v3.oas.annotations.Parameter(description = "Filtro por tipo: COMPRA, VENDA ou COMPRA,VENDA", example = "VENDA")
+            @Parameter(description = "Filtro por tipo: COMPRA, VENDA ou COMPRA,VENDA", example = "VENDA")
             @RequestParam(required = false) String type,
-            @io.swagger.v3.oas.annotations.Parameter(description = "Filtro por ID do jogador", example = "2")
-            @RequestParam(name = "player_id", required = false) String playerId) {
-        Integer parsedPlayerId = playerId == null ? null : ValidacoesGeraisUtils.inteiroPositivo("player_id", playerId);
-        byte[] csv = mercadoService.exportarTransacoesCsv(ValidacoesGeraisUtils.idUrl(id), type, parsedPlayerId);
+            @Parameter(description = "Filtro por ID do jogador", example = "2")
+            @RequestParam(name = "player_id", required = false) String playerId
+    ) {
+        int clubeId = ValidacoesGeraisUtils.validarIdRota(id, "Clube não encontrado.");
+        Integer idJogador = playerId == null ? null : ValidacoesGeraisUtils.validarInteiroPositivoQuery("player_id", playerId);
+        byte[] csv = mercadoService.exportarTransacoesCsv(clubeId, type, idJogador);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=utf-8")

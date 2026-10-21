@@ -6,7 +6,11 @@ import { leagueService } from '../services/leagueService';
 import { useLeagueSummary } from '../context/LeagueSummaryContext';
 import { useAsyncResource } from '../hooks/useAsyncResource';
 import { useToast } from '../components/ui/Toast';
-import { formatDateTimePtBr } from '../utils/formatters';
+import {
+  formatDateTimePtBr,
+  formatPlayerShortName,
+  getInitials,
+} from '../utils/formatters';
 import { SoccerPitchSvg } from '../components/ui/SoccerPitch';
 
 interface PitchPlayer {
@@ -58,19 +62,6 @@ const FORMATION_COORDS: Record<FormationType, { x: number; y: number }[]> = {
     { x: 41, y: 50 }, // 4ª linha
   ],
 };
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0 || !parts[0]) return '??';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-function formatPlayerShortName(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length <= 1) return name;
-  return `${parts[0][0]}. ${parts[parts.length - 1]}`;
-}
 
 function getAttackerSector(order: number): string {
   if (order === 1 || order === 4) return '4ª linha';

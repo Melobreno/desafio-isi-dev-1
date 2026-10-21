@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -124,9 +125,9 @@ class LigaServiceTest {
         when(clubeRepository.findById(1)).thenReturn(Optional.of(clube1));
         when(jogadorRepository.findByIdAndExcluidoEmIsNull(30)).thenReturn(Optional.of(gol));
         when(jogadorRepository.findByIdAndExcluidoEmIsNull(31)).thenReturn(Optional.of(lat));
-        when(jogadorRepository.findByIdAndExcluidoEmIsNull(32)).thenReturn(Optional.of(zag));
-        when(jogadorRepository.findByIdAndExcluidoEmIsNull(33)).thenReturn(Optional.of(mei));
-        when(jogadorRepository.findByIdAndExcluidoEmIsNull(34)).thenReturn(Optional.of(ata));
+        lenient().when(jogadorRepository.findByIdAndExcluidoEmIsNull(32)).thenReturn(Optional.of(zag));
+        lenient().when(jogadorRepository.findByIdAndExcluidoEmIsNull(33)).thenReturn(Optional.of(mei));
+        lenient().when(jogadorRepository.findByIdAndExcluidoEmIsNull(34)).thenReturn(Optional.of(ata));
 
         AtualizarEscalacaoRequestDto request = new AtualizarEscalacaoRequestDto("2-1-1", List.of(30, 31, 32, 33, 34));
         BusinessException ex = assertThrows(BusinessException.class, () -> ligaService.atualizarEscalacao(1, request));
@@ -147,10 +148,10 @@ class LigaServiceTest {
 
         when(clubeRepository.findById(1)).thenReturn(Optional.of(clube));
         when(jogadorRepository.findByIdAndExcluidoEmIsNull(30)).thenReturn(Optional.of(gol));
-        when(jogadorRepository.findByIdAndExcluidoEmIsNull(31)).thenReturn(Optional.of(lat));
-        when(jogadorRepository.findByIdAndExcluidoEmIsNull(32)).thenReturn(Optional.of(zag));
-        when(jogadorRepository.findByIdAndExcluidoEmIsNull(33)).thenReturn(Optional.of(mei));
-        when(jogadorRepository.findByIdAndExcluidoEmIsNull(34)).thenReturn(Optional.of(ata));
+        lenient().when(jogadorRepository.findByIdAndExcluidoEmIsNull(31)).thenReturn(Optional.of(lat));
+        lenient().when(jogadorRepository.findByIdAndExcluidoEmIsNull(32)).thenReturn(Optional.of(zag));
+        lenient().when(jogadorRepository.findByIdAndExcluidoEmIsNull(33)).thenReturn(Optional.of(mei));
+        lenient().when(jogadorRepository.findByIdAndExcluidoEmIsNull(34)).thenReturn(Optional.of(ata));
 
         AtualizarEscalacaoRequestDto request = new AtualizarEscalacaoRequestDto("2-1-1", List.of(30, 31, 32, 33, 34));
         BusinessException ex = assertThrows(BusinessException.class, () -> ligaService.atualizarEscalacao(1, request));

@@ -4,8 +4,4 @@ import com.github.melobreno.backend.model.Clube;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ClubeRepository extends JpaRepository<Clube, Integer> {
-
-    boolean existsByNomeIgnoreCase(String nome);
-
-    boolean existsBySiglaIgnoreCase(String sigla);
 }

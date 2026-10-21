@@ -6,6 +6,7 @@ import com.github.melobreno.backend.dto.CriarPartidaRequestDto;
 import com.github.melobreno.backend.dto.EscalacaoDto;
 import com.github.melobreno.backend.dto.PartidaDto;
 import com.github.melobreno.backend.service.LigaService;
+import com.github.melobreno.backend.util.ValidacoesGeraisUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -67,10 +68,11 @@ public class LigaController {
     })
     public ResponseEntity<EscalacaoDto> atualizarEscalacao(
             @Parameter(description = "Identificador do clube", example = "1")
-            @PathVariable Integer id,
+            @PathVariable String id,
             @RequestBody AtualizarEscalacaoRequestDto request
     ) {
-        EscalacaoDto escalacao = ligaService.atualizarEscalacao(id, request);
+        int clubeId = ValidacoesGeraisUtils.validarIdRota(id, "Clube não encontrado.");
+        EscalacaoDto escalacao = ligaService.atualizarEscalacao(clubeId, request);
         return ResponseEntity.ok(escalacao);
     }
 
@@ -86,9 +88,10 @@ public class LigaController {
     })
     public ResponseEntity<EscalacaoDto> obterEscalacao(
             @Parameter(description = "Identificador do clube", example = "1")
-            @PathVariable Integer id
+            @PathVariable String id
     ) {
-        EscalacaoDto escalacao = ligaService.obterEscalacao(id);
+        int clubeId = ValidacoesGeraisUtils.validarIdRota(id, "Clube não encontrado.");
+        EscalacaoDto escalacao = ligaService.obterEscalacao(clubeId);
         return ResponseEntity.ok(escalacao);
     }
 
@@ -138,9 +141,10 @@ public class LigaController {
     })
     public ResponseEntity<List<PartidaDto>> listarPartidas(
             @Parameter(description = "Filtro opcional por ID do clube (mandante ou visitante)", example = "1")
-            @RequestParam(name = "club_id", required = false) Integer clubId
+            @RequestParam(name = "club_id", required = false) String clubId
     ) {
-        List<PartidaDto> partidas = ligaService.listarPartidas(clubId);
+        Integer idClube = clubId == null ? null : ValidacoesGeraisUtils.validarInteiroPositivoQuery("club_id", clubId);
+        List<PartidaDto> partidas = ligaService.listarPartidas(idClube);
         return ResponseEntity.ok(partidas);
     }
 
@@ -156,9 +160,10 @@ public class LigaController {
     })
     public ResponseEntity<PartidaDto> buscarPartida(
             @Parameter(description = "Identificador da partida", example = "1")
-            @PathVariable Integer id
+            @PathVariable String id
     ) {
-        PartidaDto partida = ligaService.buscarPartida(id);
+        int partidaId = ValidacoesGeraisUtils.validarIdRota(id, "Partida não encontrada.");
+        PartidaDto partida = ligaService.buscarPartida(partidaId);
         return ResponseEntity.ok(partida);
     }
 
@@ -172,7 +177,7 @@ public class LigaController {
                     content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = ClassificacaoItemDto.class))))
     })
     public ResponseEntity<List<ClassificacaoItemDto>> obterClassificacao() {
-        List<ClassificacaoItemDto> standings = ligaService.obterClassificacao();
-        return ResponseEntity.ok(standings);
+        List<ClassificacaoItemDto> classificacao = ligaService.obterClassificacao();
+        return ResponseEntity.ok(classificacao);
     }
 }

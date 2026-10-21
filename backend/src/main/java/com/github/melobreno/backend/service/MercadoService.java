@@ -25,11 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -54,20 +52,6 @@ public class MercadoService {
     private final EscalacaoRepository escalacaoRepository;
     private final JogadorService jogadorService;
 
-    /**
-     * RN12, RN13, RN14, RN01, RN05, RN09 - Compra de jogador livre para um clube.
-     * - RN09 / V08: O jogador deve existir e não estar excluído logicamente (404).
-     * - V08: O clube deve existir (404).
-     * - RN01: Valida estritamente a data loyalty_until no fuso de Brasília (400).
-     * - Limites: loyalty_until deve ser posterior ao momento da compra e até 1.095 dias depois dele (400).
-     * - RN12: O jogador deve estar livre (sem clube) (409).
-     * - RN12: Um clube não pode comprar um jogador que ele mesmo já vendeu (409).
-     * - RN14: Limite de no máximo 12 jogadores no elenco do clube (409).
-     * - RN05: O preço pago é o valor de mercado no momento, nunca o valor base.
-     * - RN13: Taxa de compra de 5% cobrada apenas se o valor de mercado for maior que 30,00.
-     * - RN13: Custo total (valor + taxa) não pode passar de 50% do caixa antes da compra (sem arredondar) (409).
-     * - Operação atômica: desconta o custo do caixa, vincula o jogador, gera o contrato ATIVO e grava a transação COMPRA.
-     */
     @Transactional
     public TransacaoDto comprarJogador(Integer jogadorId, ComprarJogadorRequestDto request) {
         if (jogadorId == null || jogadorId < 1) {
@@ -92,12 +76,12 @@ public class MercadoService {
         }
 
         OffsetDateTime agora = ValidacoesGeraisUtils.agoraBrasilia();
-        OffsetDateTime loyaltyUntil = ValidacoesGeraisUtils.validarDateTime(request.loyaltyUntil());
+        OffsetDateTime fidelidadeAte = ValidacoesGeraisUtils.validarDateTime(request.loyaltyUntil());
 
-        if (!loyaltyUntil.isAfter(agora)) {
+        if (!fidelidadeAte.isAfter(agora)) {
             throw new BadRequestException("O fim da fidelidade deve ser posterior ao momento da compra.");
         }
-        if (loyaltyUntil.isAfter(agora.plusDays(1095))) {
+        if (fidelidadeAte.isAfter(agora.plusDays(1095))) {
             throw new BadRequestException("O fim da fidelidade não pode ultrapassar 1.095 dias a partir da compra.");
         }
 
@@ -141,7 +125,7 @@ public class MercadoService {
         contrato.setJogador(jogador);
         contrato.setClube(clube);
         contrato.setValorCompra(valorMercado);
-        contrato.setFidelidadeAte(loyaltyUntil);
+        contrato.setFidelidadeAte(fidelidadeAte);
         contrato.setSituacao("ATIVO");
         contrato.setIniciadoEm(agora);
         contratoRepository.save(contrato);
@@ -159,7 +143,7 @@ public class MercadoService {
         transacao.setCriadoEm(agora);
         Transacao transacaoSalva = transacaoRepository.save(transacao);
 
-        ContratoDto contratoDto = new ContratoDto(valorMercado, loyaltyUntil, null, null, "ATIVO");
+        ContratoDto contratoDto = new ContratoDto(valorMercado, fidelidadeAte, null, null, "ATIVO");
 
         return new TransacaoDto(
                 transacaoSalva.getId(),
@@ -182,20 +166,6 @@ public class MercadoService {
         );
     }
 
-    /**
-     * RN15, RN16, RN19 item 5, RN05, RN09 - Venda de jogador pelo clube atual.
-     * - RN09 / V08: O jogador deve existir e não estar excluído logicamente (404).
-     * - RN16 item 6: Jogador livre (sem clube) não pode ser vendido (409).
-     * - RN16 item 1: O valor de compra é obtido do contrato ATIVO (sem a taxa de compra).
-     * - RN05: O valor de venda é o valor de mercado no momento da venda.
-     * - RN15: Multa por fidelidade calculada com base nos dias restantes (arredondados para cima),
-     *         limitada ao teto de 10,00. Contrato vira RESCINDIDO com multa ou ENCERRADO sem multa.
-     * - RN16: Lucro = valor na venda - valor de compra.
-     * - RN16: Comissão progressiva se lucro > 0: 10% até 10,00 e 20% sobre o excedente, somadas e arredondadas.
-     * - RN16: Crédito no caixa = valor na venda - multa - comissão.
-     * - RN19 item 5: Se o jogador estiver na escalação titular do clube, é removido na mesma operação.
-     * - Operação atômica: jogador volta a livre, contrato é encerrado/rescindido, transação VENDA é gravada.
-     */
     @Transactional
     public TransacaoDto venderJogador(Integer jogadorId) {
         if (jogadorId == null || jogadorId < 1) {
@@ -219,24 +189,10 @@ public class MercadoService {
         BigDecimal valorCompra = contrato.getValorCompra();
         BigDecimal valorVenda = jogadorService.calcularValorMercado(jogador);
 
-        int diasRestantes = 0;
-        if (contrato.getFidelidadeAte().isAfter(agora)) {
-            long segundos = Duration.between(agora, contrato.getFidelidadeAte()).getSeconds();
-            diasRestantes = (int) Math.ceil(segundos / 86400.0);
-        }
+        int diasRestantes = calcularDiasRestantesFidelidade(contrato.getFidelidadeAte(), agora);
+        int percentualMulta = calcularPercentualMulta(diasRestantes);
 
-        int penaltyRate;
-        if (diasRestantes == 0) {
-            penaltyRate = 0;
-        } else if (diasRestantes <= 30) {
-            penaltyRate = 5;
-        } else if (diasRestantes <= 180) {
-            penaltyRate = 10;
-        } else {
-            penaltyRate = 20;
-        }
-
-        BigDecimal multaCalculada = valorVenda.multiply(BigDecimal.valueOf(penaltyRate))
+        BigDecimal multaCalculada = valorVenda.multiply(BigDecimal.valueOf(percentualMulta))
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         BigDecimal multa = multaCalculada.compareTo(TETO_MULTA) > 0 ? TETO_MULTA : multaCalculada;
 
@@ -299,22 +255,14 @@ public class MercadoService {
                 null,
                 valorCompra,
                 diasRestantes,
-                penaltyRate,
+                percentualMulta,
                 situacaoContrato,
                 novoCaixa
         );
     }
 
-    /**
-     * RN17 - Consulta o histórico de transações de um clube com resumo de totais (summary).
-     * - V08: Clube inexistente -> 404 Not Found.
-     * - Filtro player_id: se inexistente ou excluído logicamente -> 404 Not Found.
-     * - Filtro type: aceita COMPRA, VENDA ou combinação separada por vírgula sem repetição (400 se inválido).
-     * - Ordenação: da mais recente para a mais antiga (criado_em decrescente, empate por id decrescente).
-     * - Summary: calcula totais gastos, recebidos, taxas, multas e lucro das transações filtradas.
-     */
     @Transactional(readOnly = true)
-    public HistoricoTransacoesDto listarTransacoes(Integer clubeId, String type, Integer playerId) {
+    public HistoricoTransacoesDto listarTransacoes(Integer clubeId, String tipo, Integer jogadorId) {
         if (clubeId == null || clubeId < 1) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "Clube não encontrado.");
         }
@@ -322,44 +270,44 @@ public class MercadoService {
             throw new BusinessException(HttpStatus.NOT_FOUND, "Clube não encontrado.");
         }
 
-        if (playerId != null) {
-            if (playerId < 1) {
+        if (jogadorId != null) {
+            if (jogadorId < 1) {
                 throw new BadRequestException("O player_id deve ser um inteiro positivo.");
             }
-            if (!jogadorRepository.existsById(playerId)
-                    || jogadorRepository.findByIdAndExcluidoEmIsNull(playerId).isEmpty()) {
+            if (!jogadorRepository.existsById(jogadorId)
+                    || jogadorRepository.findByIdAndExcluidoEmIsNull(jogadorId).isEmpty()) {
                 throw new BusinessException(HttpStatus.NOT_FOUND, "Jogador não encontrado.");
             }
         }
 
-        Set<String> tiposFiltrados = validarEFiltraTipos(type);
+        Set<String> tiposFiltrados = validarEFiltraTipos(tipo);
 
         List<Transacao> todas = transacaoRepository.findAllByClube_IdOrderByCriadoEmDescIdDesc(clubeId);
 
         List<Transacao> filtradas = todas.stream()
                 .filter(t -> tiposFiltrados == null || tiposFiltrados.contains(t.getTipo()))
-                .filter(t -> playerId == null || playerId.equals(t.getJogador().getId()))
+                .filter(t -> jogadorId == null || jogadorId.equals(t.getJogador().getId()))
                 .toList();
 
-        BigDecimal totalSpent = BigDecimal.ZERO;
-        BigDecimal totalReceived = BigDecimal.ZERO;
-        BigDecimal totalFees = BigDecimal.ZERO;
-        BigDecimal totalPenalties = BigDecimal.ZERO;
-        BigDecimal totalProfit = BigDecimal.ZERO;
+        BigDecimal totalGasto = BigDecimal.ZERO;
+        BigDecimal totalRecebido = BigDecimal.ZERO;
+        BigDecimal totalTaxas = BigDecimal.ZERO;
+        BigDecimal totalMultas = BigDecimal.ZERO;
+        BigDecimal totalLucro = BigDecimal.ZERO;
 
         List<TransacaoDto> itens = new ArrayList<>(filtradas.size());
 
         for (Transacao t : filtradas) {
             if ("COMPRA".equals(t.getTipo())) {
-                totalSpent = totalSpent.add(t.getValor()).add(t.getTaxa());
+                totalGasto = totalGasto.add(t.getValor()).add(t.getTaxa());
             } else if ("VENDA".equals(t.getTipo())) {
-                totalReceived = totalReceived.add(t.getVariacaoCaixa());
-                totalPenalties = totalPenalties.add(t.getMulta());
+                totalRecebido = totalRecebido.add(t.getVariacaoCaixa());
+                totalMultas = totalMultas.add(t.getMulta());
                 if (t.getLucro() != null) {
-                    totalProfit = totalProfit.add(t.getLucro());
+                    totalLucro = totalLucro.add(t.getLucro());
                 }
             }
-            totalFees = totalFees.add(t.getTaxa());
+            totalTaxas = totalTaxas.add(t.getTaxa());
 
             itens.add(new TransacaoDto(
                     t.getId(),
@@ -382,28 +330,20 @@ public class MercadoService {
             ));
         }
 
-        ResumoTransacoesDto summary = new ResumoTransacoesDto(
-                totalSpent.setScale(2, RoundingMode.HALF_UP),
-                totalReceived.setScale(2, RoundingMode.HALF_UP),
-                totalFees.setScale(2, RoundingMode.HALF_UP),
-                totalPenalties.setScale(2, RoundingMode.HALF_UP),
-                totalProfit.setScale(2, RoundingMode.HALF_UP)
+        ResumoTransacoesDto resumo = new ResumoTransacoesDto(
+                totalGasto.setScale(2, RoundingMode.HALF_UP),
+                totalRecebido.setScale(2, RoundingMode.HALF_UP),
+                totalTaxas.setScale(2, RoundingMode.HALF_UP),
+                totalMultas.setScale(2, RoundingMode.HALF_UP),
+                totalLucro.setScale(2, RoundingMode.HALF_UP)
         );
 
-        return new HistoricoTransacoesDto(itens, summary);
+        return new HistoricoTransacoesDto(itens, resumo);
     }
 
-    /**
-     * RN18 - Exportação do histórico de transações em formato CSV (text/csv).
-     * - Utiliza os mesmos filtros e validações de RN17.
-     * - Cabeçalho: data_hora;tipo;jogador;valor;taxa_ou_comissao;multa;lucro;variacao_caixa
-     * - Separador ';', números com 2 casas e vírgula decimal, negativo com '-'.
-     * - Se o nome do jogador contiver ';' ou aspas, vai entre aspas duplas com aspas internas duplicadas.
-     * - UTF-8 sem BOM, LF no final de cada linha.
-     */
     @Transactional(readOnly = true)
-    public byte[] exportarTransacoesCsv(Integer clubeId, String type, Integer playerId) {
-        HistoricoTransacoesDto historico = listarTransacoes(clubeId, type, playerId);
+    public byte[] exportarTransacoesCsv(Integer clubeId, String tipo, Integer jogadorId) {
+        HistoricoTransacoesDto historico = listarTransacoes(clubeId, tipo, jogadorId);
 
         StringBuilder csv = new StringBuilder();
         csv.append("data_hora;tipo;jogador;valor;taxa_ou_comissao;multa;lucro;variacao_caixa\n");
@@ -422,14 +362,35 @@ public class MercadoService {
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private Set<String> validarEFiltraTipos(String type) {
-        if (type == null) {
+    public static int calcularDiasRestantesFidelidade(OffsetDateTime fidelidadeAte, OffsetDateTime referencia) {
+        if (fidelidadeAte == null || !fidelidadeAte.isAfter(referencia)) {
+            return 0;
+        }
+        long segundos = java.time.Duration.between(referencia, fidelidadeAte).getSeconds();
+        return (int) Math.ceil(segundos / 86400.0);
+    }
+
+    public static int calcularPercentualMulta(int diasRestantes) {
+        if (diasRestantes <= 0) {
+            return 0;
+        }
+        if (diasRestantes <= 30) {
+            return 5;
+        }
+        if (diasRestantes <= 180) {
+            return 10;
+        }
+        return 20;
+    }
+
+    private Set<String> validarEFiltraTipos(String tipo) {
+        if (tipo == null) {
             return null;
         }
-        if (type.isBlank()) {
+        if (tipo.isBlank()) {
             throw new BadRequestException("O parâmetro type não pode ser vazio.");
         }
-        String[] partes = type.split(",");
+        String[] partes = tipo.split(",");
         Set<String> permitidos = Set.of("COMPRA", "VENDA");
         Set<String> resultado = new HashSet<>();
 

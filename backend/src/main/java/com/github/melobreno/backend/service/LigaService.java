@@ -18,7 +18,6 @@ import com.github.melobreno.backend.model.Escalacao;
 import com.github.melobreno.backend.model.EscalacaoId;
 import com.github.melobreno.backend.model.Jogador;
 import com.github.melobreno.backend.model.Partida;
-import com.github.melobreno.backend.model.PosicaoJogador;
 import com.github.melobreno.backend.repository.ClubeRepository;
 import com.github.melobreno.backend.repository.DueloPartidaRepository;
 import com.github.melobreno.backend.repository.EscalacaoRepository;
@@ -54,13 +53,6 @@ public class LigaService {
     private final DueloPartidaRepository dueloPartidaRepository;
     private final JogadorService jogadorService;
 
-    /**
-     * RN19 - Escalação de Titulares do Clube (itens 1, 2, 3, 4, 7).
-     * - V01/V02: Valida se o request, a formação e a lista de 5 IDs estão íntegros.
-     * - V08: Clube ou jogador inexistente -> 404 Not Found.
-     * - V09 / RN19 item 4: Titular fora do elenco, jogador DOENTE ou posições que não fecham a formação -> 409 Conflict.
-     * - Substitui atomicamente a escalação anterior do clube e atualiza a formação salva.
-     */
     @Transactional
     public EscalacaoDto atualizarEscalacao(Integer clubeId, AtualizarEscalacaoRequestDto request) {
         if (request == null) {
@@ -127,18 +119,12 @@ public class LigaService {
             escalacaoRepository.save(esc);
         }
 
-        titulares.sort(comparadorElenco());
+        titulares.sort(JogadorService.comparadorElenco());
         List<JogadorDto> jogadoresDto = titulares.stream().map(jogadorService::paraDto).toList();
 
         return new EscalacaoDto(clubeId, formacao, true, jogadoresDto);
     }
 
-    /**
-     * RN19 - Consulta a escalação atual do clube (item 6).
-     * - V08: Clube inexistente -> 404 Not Found.
-     * - Retorna a formação salva, se a escalação está completa (5 jogadores) e a lista na ordem do elenco (RN11).
-     * - Sem escalação: formation null, complete false, players vazia.
-     */
     @Transactional(readOnly = true)
     public EscalacaoDto obterEscalacao(Integer clubeId) {
         if (clubeId == null || clubeId < 1) {
@@ -158,27 +144,13 @@ public class LigaService {
                 .filter(j -> j.getExcluidoEm() == null)
                 .toList());
 
-        titulares.sort(comparadorElenco());
-        boolean complete = titulares.size() == 5;
+        titulares.sort(JogadorService.comparadorElenco());
+        boolean completa = titulares.size() == 5;
         List<JogadorDto> jogadoresDto = titulares.stream().map(jogadorService::paraDto).toList();
 
-        return new EscalacaoDto(clubeId, clube.getFormacao(), complete, jogadoresDto);
+        return new EscalacaoDto(clubeId, clube.getFormacao(), completa, jogadoresDto);
     }
 
-    /**
-     * RN20 - Simulação determinística de Partida (itens 1 a 8).
-     * - V01/V02: home_club_id e away_club_id inteiros positivos e distintos (400).
-     * - V08: Mandante ou visitante inexistente -> 404 Not Found.
-     * - RN20 item 1: Mandante ou visitante sem escalação completa (5 titulares) -> 409 Conflict.
-     * - RN20 item 2: 5 titulares de cada clube ordenados pela ordem do elenco (Goleiro + 4 jogadores de linha).
-     * - RN20 item 3: Titular MAL_CONDICIONADO sofre desconto de 15% em cada atributo (arredondamento meio para cima).
-     * - RN20 item 4: 6 duelos determinísticos:
-     *   - Duelos 1 a 3 (Mandante ataca): D1 (4º vs GOL), D2 (3º vs 1º), D3 (2º vs 2º).
-     *   - Duelos 4 a 6 (Visitante ataca): D4 (4º vs GOL), D5 (3º vs 1º), D6 (2º vs 2º).
-     * - RN20 item 5: Atributo de ataque conforme posição (ATA: finalização, MEI: passe, ZAG/LAT: drible). Defesa usa sempre defending.
-     * - RN20 item 6: Gol se ataque > defesa (empate não é gol). Placar e resultado (MANDANTE, VISITANTE, EMPATE).
-     * - RN20 item 7: Grava partida, formações e os 6 duelos atomicamente.
-     */
     @Transactional
     public PartidaDto jogarPartida(CriarPartidaRequestDto request) {
         if (request == null || request.homeClubId() == null || request.awayClubId() == null) {
@@ -213,8 +185,8 @@ public class LigaService {
         List<Jogador> mandanteTitulares = new ArrayList<>(escMandante.stream().map(Escalacao::getJogador).toList());
         List<Jogador> visitanteTitulares = new ArrayList<>(escVisitante.stream().map(Escalacao::getJogador).toList());
 
-        mandanteTitulares.sort(comparadorElenco());
-        visitanteTitulares.sort(comparadorElenco());
+        mandanteTitulares.sort(JogadorService.comparadorElenco());
+        visitanteTitulares.sort(JogadorService.comparadorElenco());
 
         Jogador mGol = mandanteTitulares.get(0);
         Jogador mL1 = mandanteTitulares.get(1);
@@ -250,10 +222,7 @@ public class LigaService {
             }
         }
 
-        String resultado = golsMandante > golsVisitante
-                ? "MANDANTE"
-                : (golsVisitante > golsMandante ? "VISITANTE" : "EMPATE");
-
+        String resultado = calcularResultadoPartida(golsMandante, golsVisitante);
         OffsetDateTime jogadaEm = ValidacoesGeraisUtils.agoraBrasilia();
 
         Partida partida = new Partida();
@@ -341,23 +310,17 @@ public class LigaService {
         );
     }
 
-    /**
-     * RN21 - Histórico de partidas (item 1).
-     * - Lista da mais recente para a mais antiga (empate por id desc).
-     * - Sem duels na resposta.
-     * - Filtro club_id opcional (404 se clube inexistente, 400 se id <= 0).
-     */
     @Transactional(readOnly = true)
-    public List<PartidaDto> listarPartidas(Integer clubId) {
+    public List<PartidaDto> listarPartidas(Integer clubeId) {
         List<Partida> partidas;
-        if (clubId != null) {
-            if (clubId < 1) {
+        if (clubeId != null) {
+            if (clubeId < 1) {
                 throw new BadRequestException("O parâmetro club_id deve ser um inteiro positivo.");
             }
-            if (!clubeRepository.existsById(clubId)) {
+            if (!clubeRepository.existsById(clubeId)) {
                 throw new BusinessException(HttpStatus.NOT_FOUND, "Clube não encontrado.");
             }
-            partidas = partidaRepository.findAllByMandante_IdOrVisitante_IdOrderByJogadaEmDescIdDesc(clubId, clubId);
+            partidas = partidaRepository.findAllByMandante_IdOrVisitante_IdOrderByJogadaEmDescIdDesc(clubeId, clubeId);
         } else {
             partidas = partidaRepository.findAllByOrderByJogadaEmDescIdDesc();
         }
@@ -365,10 +328,6 @@ public class LigaService {
         return partidas.stream().map(this::paraPartidaDtoResumida).toList();
     }
 
-    /**
-     * RN21 - Consulta detalhe de partida com os 6 duelos (item 2).
-     * - V08: Partida inexistente -> 404 Not Found.
-     */
     @Transactional(readOnly = true)
     public PartidaDto buscarPartida(Integer partidaId) {
         if (partidaId == null || partidaId < 1) {
@@ -402,9 +361,7 @@ public class LigaService {
                 d.getGol()
         )).toList();
 
-        String resultado = partida.getGolsMandante() > partida.getGolsVisitante()
-                ? "MANDANTE"
-                : (partida.getGolsVisitante() > partida.getGolsMandante() ? "VISITANTE" : "EMPATE");
+        String resultado = calcularResultadoPartida(partida.getGolsMandante(), partida.getGolsVisitante());
 
         PartidaClubeDto homeDto = new PartidaClubeDto(
                 partida.getMandante().getId(),
@@ -430,94 +387,90 @@ public class LigaService {
         );
     }
 
-    /**
-     * RN21 - Tabela de Classificação da Liga (itens 3, 4, 5).
-     * - Inclui todos os clubes, inclusive os zerados.
-     * - Calculada a cada chamada: vitória = 3 pontos, empate = 1 ponto, derrota = 0 pontos.
-     * - Desempate estrito:
-     *   1) Pontos (decrescente)
-     *   2) Saldo de gols (decrescente)
-     *   3) Gols marcados (decrescente)
-     *   4) Nome do clube em ordem alfabética (normalizado sem acentos)
-     *   5) ID do clube (crescente)
-     * - Posições numeradas sequencialmente de 1 a N.
-     */
     @Transactional(readOnly = true)
     public List<ClassificacaoItemDto> obterClassificacao() {
         List<Clube> clubes = clubeRepository.findAll();
         List<Partida> partidas = partidaRepository.findAll();
 
-        Map<Integer, RegistroClassificacao> mapClubes = new HashMap<>();
+        Map<Integer, RegistroClassificacao> mapaClubes = new HashMap<>();
         for (Clube c : clubes) {
-            mapClubes.put(c.getId(), new RegistroClassificacao(c.getId(), c.getNome()));
+            mapaClubes.put(c.getId(), new RegistroClassificacao(c.getId(), c.getNome()));
         }
 
         for (Partida p : partidas) {
-            RegistroClassificacao mandante = mapClubes.get(p.getMandante().getId());
-            RegistroClassificacao visitante = mapClubes.get(p.getVisitante().getId());
+            RegistroClassificacao mandante = mapaClubes.get(p.getMandante().getId());
+            RegistroClassificacao visitante = mapaClubes.get(p.getVisitante().getId());
 
             if (mandante != null && visitante != null) {
                 int gM = p.getGolsMandante();
                 int gV = p.getGolsVisitante();
 
-                mandante.played++;
-                mandante.goalsFor += gM;
-                mandante.goalsAgainst += gV;
+                mandante.partidasJogadas++;
+                mandante.golsMarcados += gM;
+                mandante.golsSofridos += gV;
 
-                visitante.played++;
-                visitante.goalsFor += gV;
-                visitante.goalsAgainst += gM;
+                visitante.partidasJogadas++;
+                visitante.golsMarcados += gV;
+                visitante.golsSofridos += gM;
 
                 if (gM > gV) {
-                    mandante.wins++;
-                    mandante.points += 3;
-                    visitante.losses++;
+                    mandante.vitorias++;
+                    mandante.pontos += 3;
+                    visitante.derrotas++;
                 } else if (gV > gM) {
-                    visitante.wins++;
-                    visitante.points += 3;
-                    mandante.losses++;
+                    visitante.vitorias++;
+                    visitante.pontos += 3;
+                    mandante.derrotas++;
                 } else {
-                    mandante.draws++;
-                    mandante.points += 1;
-                    visitante.draws++;
-                    visitante.points += 1;
+                    mandante.empates++;
+                    mandante.pontos += 1;
+                    visitante.empates++;
+                    visitante.pontos += 1;
                 }
             }
         }
 
-        List<RegistroClassificacao> lista = new ArrayList<>(mapClubes.values());
+        List<RegistroClassificacao> lista = new ArrayList<>(mapaClubes.values());
         lista.sort(Comparator
-                .comparing(RegistroClassificacao::getPoints).reversed()
-                .thenComparing(Comparator.comparing(RegistroClassificacao::getGoalDifference).reversed())
-                .thenComparing(Comparator.comparing(RegistroClassificacao::getGoalsFor).reversed())
-                .thenComparing(r -> ValidacoesGeraisUtils.normalizarParaOrdenacao(r.clubName))
-                .thenComparing(RegistroClassificacao::getClubId));
+                .comparing(RegistroClassificacao::getPontos).reversed()
+                .thenComparing(Comparator.comparing(RegistroClassificacao::getSaldoGols).reversed())
+                .thenComparing(Comparator.comparing(RegistroClassificacao::getGolsMarcados).reversed())
+                .thenComparing(r -> ValidacoesGeraisUtils.normalizarParaOrdenacao(r.nomeClube))
+                .thenComparing(RegistroClassificacao::getClubeId));
 
         List<ClassificacaoItemDto> resultado = new ArrayList<>(lista.size());
         for (int i = 0; i < lista.size(); i++) {
             RegistroClassificacao reg = lista.get(i);
             resultado.add(new ClassificacaoItemDto(
                     i + 1,
-                    reg.clubId,
-                    reg.clubName,
-                    reg.played,
-                    reg.wins,
-                    reg.draws,
-                    reg.losses,
-                    reg.goalsFor,
-                    reg.goalsAgainst,
-                    reg.getGoalDifference(),
-                    reg.points
+                    reg.clubeId,
+                    reg.nomeClube,
+                    reg.partidasJogadas,
+                    reg.vitorias,
+                    reg.empates,
+                    reg.derrotas,
+                    reg.golsMarcados,
+                    reg.golsSofridos,
+                    reg.getSaldoGols(),
+                    reg.pontos
             ));
         }
 
         return resultado;
     }
 
+    public String calcularResultadoPartida(int golsMandante, int golsVisitante) {
+        if (golsMandante > golsVisitante) {
+            return "MANDANTE";
+        }
+        if (golsVisitante > golsMandante) {
+            return "VISITANTE";
+        }
+        return "EMPATE";
+    }
+
     private PartidaDto paraPartidaDtoResumida(Partida p) {
-        String resultado = p.getGolsMandante() > p.getGolsVisitante()
-                ? "MANDANTE"
-                : (p.getGolsVisitante() > p.getGolsMandante() ? "VISITANTE" : "EMPATE");
+        String resultado = calcularResultadoPartida(p.getGolsMandante(), p.getGolsVisitante());
 
         PartidaClubeDto homeDto = new PartidaClubeDto(
                 p.getMandante().getId(),
@@ -582,9 +535,6 @@ public class LigaService {
         );
     }
 
-    /**
-     * RN20 item 3 - Redução de 15% para MAL_CONDICIONADO, arredondando com meio para cima.
-     */
     private int aplicarCondicaoPartida(int valorOriginal, CondicaoJogador condicao) {
         if (condicao == CondicaoJogador.MAL_CONDICIONADO) {
             return BigDecimal.valueOf(valorOriginal)
@@ -595,10 +545,6 @@ public class LigaService {
         return valorOriginal;
     }
 
-    /**
-     * RN19 item 4 - Validação de formação tática:
-     * Exatamente 1 GOL e setorização correta (Defesa = ZAG ou LAT).
-     */
     private void validarFormacao(String formacao, List<Jogador> titulares) {
         int gol = 0;
         int defesa = 0;
@@ -631,22 +577,6 @@ public class LigaService {
         }
     }
 
-    private Comparator<Jogador> comparadorElenco() {
-        return Comparator.comparing((Jogador j) -> ordemPosicaoElenco(j.getPosicao()))
-                .thenComparing(j -> ValidacoesGeraisUtils.normalizarParaOrdenacao(j.getNome()))
-                .thenComparing(Jogador::getId);
-    }
-
-    private int ordemPosicaoElenco(PosicaoJogador posicao) {
-        return switch (posicao) {
-            case GOL -> 1;
-            case ZAG -> 2;
-            case LAT -> 3;
-            case MEI -> 4;
-            case ATA -> 5;
-        };
-    }
-
     private static class DueloSimulado {
         final int ordem;
         final Clube clubeAtacante;
@@ -674,35 +604,35 @@ public class LigaService {
     }
 
     private static class RegistroClassificacao {
-        final Integer clubId;
-        final String clubName;
-        int played = 0;
-        int wins = 0;
-        int draws = 0;
-        int losses = 0;
-        int goalsFor = 0;
-        int goalsAgainst = 0;
-        int points = 0;
+        final Integer clubeId;
+        final String nomeClube;
+        int partidasJogadas = 0;
+        int vitorias = 0;
+        int empates = 0;
+        int derrotas = 0;
+        int golsMarcados = 0;
+        int golsSofridos = 0;
+        int pontos = 0;
 
-        RegistroClassificacao(Integer clubId, String clubName) {
-            this.clubId = clubId;
-            this.clubName = clubName;
+        RegistroClassificacao(Integer clubeId, String nomeClube) {
+            this.clubeId = clubeId;
+            this.nomeClube = nomeClube;
         }
 
-        int getPoints() {
-            return points;
+        int getPontos() {
+            return pontos;
         }
 
-        int getGoalDifference() {
-            return goalsFor - goalsAgainst;
+        int getSaldoGols() {
+            return golsMarcados - golsSofridos;
         }
 
-        int getGoalsFor() {
-            return goalsFor;
+        int getGolsMarcados() {
+            return golsMarcados;
         }
 
-        Integer getClubId() {
-            return clubId;
+        Integer getClubeId() {
+            return clubeId;
         }
     }
 }

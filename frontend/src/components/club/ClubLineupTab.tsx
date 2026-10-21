@@ -23,6 +23,7 @@ interface ClubLineupTabProps {
 interface FormationConfig {
   code: FormationType;
   label: string;
+  summary: string;
   defenseCount: number;
   midfieldCount: number;
   attackCount: number;
@@ -33,10 +34,115 @@ interface FormationConfig {
   }>;
 }
 
+const VERTICAL_FORMATION_DOTS: Record<
+  FormationType,
+  Array<{ cx: number; cy: number }>
+> = {
+  '3-1': [
+    { cx: 17, cy: 42.5 }, // Goleiro
+    { cx: 7.5, cy: 30 }, // Defensor 1
+    { cx: 17, cy: 30 }, // Defensor 2
+    { cx: 26.5, cy: 30 }, // Defensor 3
+    { cx: 17, cy: 11 }, // Atacante
+  ],
+  '2-2': [
+    { cx: 17, cy: 42.5 }, // Goleiro
+    { cx: 10, cy: 30 }, // Defensor 1
+    { cx: 24, cy: 30 }, // Defensor 2
+    { cx: 10, cy: 12 }, // Atacante 1
+    { cx: 24, cy: 12 }, // Atacante 2
+  ],
+  '2-1-1': [
+    { cx: 17, cy: 42.5 }, // Goleiro
+    { cx: 10, cy: 31 }, // Defensor 1
+    { cx: 24, cy: 31 }, // Defensor 2
+    { cx: 17, cy: 23 }, // Meio-campo
+    { cx: 17, cy: 11 }, // Atacante
+  ],
+  '1-2-1': [
+    { cx: 17, cy: 42.5 }, // Goleiro
+    { cx: 17, cy: 32 }, // Defensor
+    { cx: 10, cy: 22 }, // Meio-campo 1
+    { cx: 24, cy: 22 }, // Meio-campo 2
+    { cx: 17, cy: 11 }, // Atacante
+  ],
+};
+
+const VerticalFieldPitchThumbnail: React.FC<{ formation: FormationType }> = ({
+  formation,
+}) => {
+  const dots = VERTICAL_FORMATION_DOTS[formation] || VERTICAL_FORMATION_DOTS['2-1-1'];
+
+  return (
+    <svg
+      width="34"
+      height="48"
+      viewBox="0 0 34 48"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ display: 'block', flexShrink: 0, borderRadius: 5 }}
+      aria-hidden="true"
+    >
+      {/* Grass background */}
+      <rect width="34" height="48" rx="4" fill="#0E4E28" />
+      {/* Outer field boundary */}
+      <rect
+        x="1.5"
+        y="1.5"
+        width="31"
+        height="45"
+        rx="3"
+        stroke="rgba(255, 255, 255, 0.45)"
+        strokeWidth="0.8"
+      />
+      {/* Halfway line */}
+      <line
+        x1="1.5"
+        y1="23.5"
+        x2="32.5"
+        y2="23.5"
+        stroke="rgba(255, 255, 255, 0.45)"
+        strokeWidth="0.8"
+      />
+      {/* Center circle */}
+      <circle
+        cx="17"
+        cy="23.5"
+        r="4.8"
+        stroke="rgba(255, 255, 255, 0.45)"
+        strokeWidth="0.8"
+      />
+      {/* Top goal area */}
+      <rect
+        x="8.5"
+        y="1.5"
+        width="17"
+        height="7.5"
+        stroke="rgba(255, 255, 255, 0.45)"
+        strokeWidth="0.8"
+      />
+      {/* Bottom goal area */}
+      <rect
+        x="8.5"
+        y="39"
+        width="17"
+        height="7.5"
+        stroke="rgba(255, 255, 255, 0.45)"
+        strokeWidth="0.8"
+      />
+      {/* Player dots */}
+      {dots.map((pt, idx) => (
+        <circle key={idx} cx={pt.cx} cy={pt.cy} r="1.85" fill="#FFFFFF" />
+      ))}
+    </svg>
+  );
+};
+
 const FORMATIONS: Record<FormationType, FormationConfig> = {
   '3-1': {
     code: '3-1',
     label: '3-1 (3 Defesa, 1 Ataque)',
+    summary: 'Defesa 3, ataque 1',
     defenseCount: 3,
     midfieldCount: 0,
     attackCount: 1,
@@ -51,6 +157,7 @@ const FORMATIONS: Record<FormationType, FormationConfig> = {
   '2-2': {
     code: '2-2',
     label: '2-2 (2 Defesa, 2 Ataque)',
+    summary: 'Defesa 2, ataque 2',
     defenseCount: 2,
     midfieldCount: 0,
     attackCount: 2,
@@ -65,6 +172,7 @@ const FORMATIONS: Record<FormationType, FormationConfig> = {
   '2-1-1': {
     code: '2-1-1',
     label: '2-1-1 (2 Defesa, 1 Meio, 1 Ataque)',
+    summary: 'Defesa 2, meio 1, ataque 1',
     defenseCount: 2,
     midfieldCount: 1,
     attackCount: 1,
@@ -79,6 +187,7 @@ const FORMATIONS: Record<FormationType, FormationConfig> = {
   '1-2-1': {
     code: '1-2-1',
     label: '1-2-1 (1 Defesa, 2 Meio, 1 Ataque)',
+    summary: 'Defesa 1, meio 2, ataque 1',
     defenseCount: 1,
     midfieldCount: 2,
     attackCount: 1,
@@ -337,15 +446,16 @@ export const ClubLineupTab: React.FC<ClubLineupTabProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginBottom: 12,
+                  marginBottom: 14,
                 }}
               >
                 <div>
-                  <div className="cell-strong" style={{ fontSize: 14 }}>
-                    Formação tática
+                  <div className="cell-strong" style={{ fontSize: 15, fontWeight: 700 }}>
+                    Formação
                   </div>
-                  <div className="cell-muted" style={{ fontSize: 12 }}>
-                    4 opções aceitas de futebol de 5 / futsal (1 goleiro + 4 de linha)
+                  <div className="cell-muted" style={{ fontSize: 13, marginTop: 2 }}>
+                    Os números contam os jogadores de linha de trás para frente. O goleiro
+                    fica fora da conta.
                   </div>
                 </div>
                 <Badge variant={isLineupComplete ? 'success' : 'warning'}>
@@ -366,10 +476,17 @@ export const ClubLineupTab: React.FC<ClubLineupTabProps> = ({
                       className={`lineup-formation-card ${isActive ? 'active' : ''}`}
                       onClick={() => handleFormationChange(f)}
                     >
-                      <div className="lineup-formation-name">{cfg.code}</div>
-                      <div className="lineup-formation-desc">
-                        {cfg.defenseCount} DEF · {cfg.midfieldCount} MEI ·{' '}
-                        {cfg.attackCount} ATA
+                      <VerticalFieldPitchThumbnail formation={f} />
+                      <div className="lineup-formation-body">
+                        <div className="lineup-formation-title-row">
+                          <span className="lineup-formation-radio" aria-hidden="true">
+                            {isActive && (
+                              <span className="lineup-formation-radio-inner" />
+                            )}
+                          </span>
+                          <span className="lineup-formation-name">{cfg.code}</span>
+                        </div>
+                        <div className="lineup-formation-desc">{cfg.summary}</div>
                       </div>
                     </button>
                   );
