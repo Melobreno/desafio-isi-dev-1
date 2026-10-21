@@ -1,203 +1,149 @@
 # ⚽ Passe — Sistema de Gestão de Liga e Mercado de Futebol
 
 [![Java 21](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.4-green.svg)](https://spring.io/projects/spring-boot)
-[![React](https://img.shields.io/badge/React-19.2-blue.svg)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-8.x-purple.svg)](https://vitejs.dev/)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.mysql.com/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.6-green.svg)](https://spring.io/projects/spring-boot)
+[![MySQL 8.0](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.mysql.com/)
+[![React 19](https://img.shields.io/badge/React-19.2-blue.svg)](https://react.dev/)
+[![TypeScript 6](https://img.shields.io/badge/TypeScript-6.x-blue.svg)](https://www.typescriptlang.org/)
+[![Vite 8](https://img.shields.io/badge/Vite-8.x-purple.svg)](https://vitejs.dev/)
 [![Docker Compose](https://img.shields.io/badge/Docker_Compose-v2-blue.svg)](https://docs.docker.com/compose/)
 
-Solução completa desenvolvida para o Estudo de Caso **SENAI/PE – CÓD. 237 DESENVOLVEDOR I (FULLSTACK)**. O sistema contempla a gestão completa de jogadores com cálculo automatizado de valor de mercado e exclusão lógica, administração financeira e patrimonial de clubes (limite de 20), compra e venda com contratos de fidelidade, multas e comissões sobre lucro, histórico contábil imutável com exportação em CSV, escalações táticas por formação, simulação de partidas com 6 duelos técnicos determinísticos e classificação oficial com múltiplos critérios de desempate.
+Solução completa desenvolvida para o Estudo de Caso **SENAI/PE – CÓD. 237 DESENVOLVEDOR I (FULLSTACK)**. O sistema contempla a gestão de jogadores com cálculo automatizado de overall e valor de mercado, administração de clubes (limite de 20), compra e venda com contratos de fidelidade, multas e comissões sobre lucro, histórico contábil imutável com exportação em CSV, escalações táticas por formação, simulação de partidas com 6 duelos técnicos determinísticos e classificação oficial da liga com critérios de desempate.
 
 ---
 
 ## 1. 📋 Pré-requisitos
 
-| Ferramenta                         | Versão recomendada                | Finalidade                                            |
-| :--------------------------------- | :-------------------------------- | :---------------------------------------------------- |
-| **Ubuntu Linux**                   | **24.04 LTS** (ambiente da banca) | Sistema operacional base                              |
-| **Docker Engine & Docker Compose** | **Docker 24+ / Compose v2**       | Execução integrada de banco, backend e frontend       |
-| **Java Development Kit (JDK)**     | **21 LTS**                        | Compilação e testes do backend fora do Docker         |
-| **Maven**                          | **3.9+** (ou `./mvnw` incluído)   | Gerenciador de build do backend                       |
-| **Node.js & npm**                  | **Node.js 22 LTS / npm 10+**      | Execução e testes do frontend fora do Docker          |
-| **MySQL**                          | **8.0**                           | Banco de dados relacional (imagem oficial via Docker) |
+| Ferramenta | Versão recomendada | Finalidade |
+| :--- | :--- | :--- |
+| **Ubuntu Linux** | **24.04 LTS** (ambiente da banca) | Sistema operacional base |
+| **Docker Engine & Compose** | **Docker 24+ / Compose v2** | Orquestração integrada de banco, backend e frontend |
+| **Java Development Kit (JDK)** | **21 LTS** | Compilação e testes do backend fora do Docker |
+| **Maven** | **3.9+** (ou `./mvnw` incluído) | Gerenciador de build e dependências do backend |
+| **Node.js & npm** | **Node.js 22 LTS / npm 10+** | Execução e testes do frontend fora do Docker |
+| **MySQL** | **8.0** (imagem oficial `mysql:8.0`) | Banco de dados relacional oficial |
 
 ---
-## 2. 🚀 Passo a passo para instalar e executar (Ubuntu 24.04)
 
-### 2.1 Execução com Docker Compose (Comando Único Recomendado)
-Clone o Repositório a partir do link: 
+## 2. 🗄️ Passo a passo para criar o banco de dados e para recriá-lo do zero
+
+O esquema com as 7 tabelas normalizadas (`jogadores`, `clubes`, `contratos`, `transacoes`, `escalacoes`, `partidas`, `duelos_partida`) é criado pelo **Flyway** a partir de `backend/src/main/resources/db/migration/V1__create_tables.sql` na inicialização da API. O banco nasce **completamente vazio**, sem dados mockados.
+
+### 2.1 Criar o banco pela primeira vez
+A partir da raiz do repositório:
 ```bash
-git clone https://github.com/Melobreno/desafio-isi-dev-1.git
+cp .env.example .env
+docker compose up -d db
 ```
 
-Entre no diretório do repositório: 
+### 2.2 Recriar o banco do zero (apagar e recriar limpo)
+A partir da raiz do repositório:
 ```bash
-cd ./desafio-isi-dev-1
+docker compose down -v
+docker compose up -d db
 ```
+> O parâmetro `-v` remove o volume nomeado `mysql_data`, garantindo que o banco seja recriado vazio na próxima inicialização.
 
-Na raiz do repositório, execute:
+---
 
+## 3. 🚀 Passo a passo para instalar e executar (Ubuntu 24.04)
+
+### 3.1 Execução com Docker Compose (Comando único recomendado)
+
+A partir da raiz do repositório:
 ```bash
 cp .env.example .env
 docker compose up -d --build
 ```
 
-- **Interface Web (Frontend):** `http://localhost:5173`
 - **Origem da API REST (Backend):** `http://localhost:8080` (endpoints sob `/api/v1`)
+- **Interface Web (Frontend):** `http://localhost:5173`
 - **Documentação Interativa Swagger / OpenAPI:** `http://localhost:8080/swagger-ui.html`
 
 Para encerrar os contêineres:
-
 ```bash
 docker compose down
 ```
 
-
-## 3. 🗄️ Criar e recriar o banco de dados do zero
-
-O banco de dados relacional utiliza o **Flyway** para versionamento e execução automática das migrações na inicialização da API, gerando as 7 tabelas normalizadas do esquema relacional:
-`jogadores`, `clubes`, `contratos`, `transacoes`, `escalacoes`, `partidas` e `duelos_partida`.
-
-O banco nasce completamente **vazio** (sem dados mockados obrigatórios), conforme exigência do regulamento.
-
-### 3.1 Criar o banco pela primeira vez
-
-Na raiz do repositório:
-
-```bash
-cp .env.example .env
-docker compose up -d db
-```
-
-### 3.2 Recriar o banco do zero (apagar e recriar limpo)
-
-Na raiz do repositório:
-
-```bash
-docker compose down -v
-docker compose up -d db
-```
-
-> O parâmetro `-v` remove o volume nomeado `mysql_data`, garantindo que o banco seja recriado vazio na próxima inicialização.
-
-### 3.3 Carga Opcional de Dados (Seeds de Demonstração)
-
-Caso deseje iniciar a aplicação já com **dados fictícios de demonstração** (6 clubes, 23 jogadores — 16 escalados/contratados e 7 livres —, histórico de transações e 1 partida jogada), basta ativar a flag `SEED_DATA`:
-
-```bash
-# Inicialização completa via Docker Compose com seed ativado:
-SEED_DATA=true docker compose up -d
-
-# Ou definindo no arquivo .env:
-# SEED_DATA=true
-```
-
-> **Nota:** A execução é **idempotente**. O seeder verifica se já existem registros cadastrados antes de aplicar o script `db/seed.sql`, prevenindo duplicidades se o contêiner reiniciar.
-
 ---
 
-### 3.4 Execução Manual para Desenvolvimento (Sem contêiner da aplicação)
+### 3.2 Execução manual para desenvolvimento
 
-#### Passo A: Subir o banco de dados MySQL
-
+#### Subir o banco de dados MySQL
 Na raiz do repositório:
-
 ```bash
 cp .env.example .env
 docker compose up -d db
 ```
 
-#### Passo B: Iniciar o Backend (Terminal 1)
-
-Na pasta `backend`:
-
+#### Iniciar o Backend (Terminal 1)
+Na raiz do repositório:
 ```bash
 cd backend
 ./mvnw spring-boot:run
 ```
+> A API estará disponível em `http://localhost:8080`.
 
-> O backend iniciará na porta **8080**.
-
-#### Passo C: Iniciar o Frontend (Terminal 2)
-
+#### Iniciar o Frontend (Terminal 2)
 A partir da raiz do repositório, em outro terminal:
-
 ```bash
 cd frontend
 cp .env.example .env
 npm ci
 npm run dev
 ```
-
-> O frontend iniciará em `http://localhost:5173`.
+> A interface web estará disponível em `http://localhost:5173`.
 
 ---
 
-## 4. 🧪 Testes, Lint e Formatação
+### 3.3 Testes automatizados, Lint e Formatação (Diferenciais)
 
-### 4.1 Backend (Java / Spring Boot)
-
+#### Backend (JUnit 5 + Mockito)
 Na pasta `backend`:
-
 ```bash
 cd backend
 ./mvnw test
 ```
+> Executa a suíte de testes unitários terminando sem modo de observação (`watch`), cobrindo as regras de negócio de valor de mercado (RN02 a RN05), fidelidade, duelos e classificação.
 
-> Executa a suíte de testes unitários e de integração sem modo de observação, cobrindo todas as regras de negócio de valor de mercado (RN02 a RN05), fidelidade, duelos de partida e classificação.
-
-### 4.2 Frontend (React / TypeScript / Vitest)
-
+#### Frontend (Vitest + Testing Library + ESLint + Prettier)
 Na pasta `frontend`:
-
 ```bash
 cd frontend
 npm test
-```
-
-> Executa **44 testes automatizados** com Vitest e Testing Library terminando sozinhos em poucos segundos.
-
-```bash
 npm run lint
-```
-
-> Executa a análise estática do ESLint, terminando com **0 erros e 0 avisos**.
-
-```bash
 npm run format:check
 ```
-
-> Verifica a formatação com Prettier sem alterar arquivos.
+> Executa **44 testes unitários e de componente** com Vitest (sem modo watch), verificação de análise estática do ESLint (**0 erros**) e checagem de estilo com Prettier sem alterar arquivos.
 
 ---
 
-## 5. ⚙️ Variáveis de ambiente
+## 4. ⚙️ Variáveis de ambiente
 
 Arquivo de referência consolidado: [`.env.example`](.env.example) na raiz do repositório:
 
-| Variável              | Valor Padrão                    | Descrição                                          |
-| :-------------------- | :------------------------------ | :------------------------------------------------- |
-| `DB_HOST`             | `localhost` (ou `db` no Docker) | Endereço do servidor MySQL                         |
-| `DB_PORT`             | `3301`                          | Porta exposta no host para o MySQL                 |
-| `DB_NAME`             | `caseSenai`                     | Nome do banco de dados                             |
-| `DB_USER`             | `admin`                         | Usuário da aplicação                               |
-| `DB_PASSWORD`         | `passe_password`                | Senha da aplicação                                 |
-| `MYSQL_ROOT_PASSWORD` | `rootpassword%db`               | Senha do usuário root do contêiner MySQL           |
-| `PORT`                | `8080`                          | Porta HTTP da API backend                          |
-| `CORS_ALLOWED_ORIGIN` | `http://localhost:5173`         | Origem do frontend autorizada nas requisições CORS |
-| `VITE_API_BASE_URL`   | `http://localhost:8080/api/v1`  | URL da API consumida pelo cliente Vite             |
+| Variável | Valor Padrão | Descrição |
+| :--- | :--- | :--- |
+| `DB_HOST` | `localhost` | Host do MySQL (no Compose, a API usa `db`) |
+| `DB_PORT` | `3301` | Porta do MySQL exposta no host |
+| `DB_NAME` | `caseSenai` | Nome do banco de dados |
+| `DB_USER` | `admin` | Usuário da aplicação MySQL |
+| `DB_PASSWORD` | `passe_password` | Senha da aplicação MySQL |
+| `MYSQL_ROOT_PASSWORD` | `rootpassword%db` | Senha de root do contêiner MySQL |
+| `PORT` | `8080` | Porta HTTP da API backend |
+| `CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | Origem autorizada nas requisições CORS |
+| `FRONTEND_PORT` | `5173` | Porta HTTP da interface web |
+| `VITE_API_URL` | `http://localhost:8080` | Origem da API consumida pelo frontend |
 
 ---
 
-## 6. 📁 Estrutura de pastas e bibliotecas
+## 5. 📁 Estrutura de pastas e bibliotecas utilizadas
 
-### 6.1 Visão Geral do Repositório
+### 5.1 Estrutura do projeto
 
 ```text
 desafio-isi-dev-1/
-├── backend/                    # API REST em Spring Boot 3.4.4 (Java 21)
+├── backend/                    # API REST em Spring Boot 3.5.6 (Java 21)
 │   ├── src/main/java/          # Clean Architecture: Controller, Service, Model, DTOs, Repository
 │   ├── src/main/resources/     # Migrações Flyway e application.properties
 │   ├── src/test/java/          # Testes unitários com JUnit 5 e Mockito
@@ -206,56 +152,61 @@ desafio-isi-dev-1/
 ├── frontend/                   # Interface web em React 19 + TypeScript + Vite
 │   ├── src/                    # Componentes, Páginas, Services, Hooks, Contexts e Design System
 │   ├── Dockerfile              # Imagem Docker do frontend servido com Nginx
-│   └── package.json            # Dependências e scripts npm
+│   ├── package.json            # Dependências e scripts npm
+│   └── package-lock.json       # Arquivo de trava de versões versionado
 ├── docs/                       # Documentação técnica e mockup de referência
 ├── case/                       # Enunciado oficial, barema e glossário da seleção
 ├── docker-compose.yml          # Orquestração dos serviços (db, backend, frontend)
 ├── .env.example                # Modelo de variáveis de ambiente
-└── README.md                   # Esta documentação principal
+└── README.md                   # Documentação principal
 ```
 
-### 6.2 Bibliotecas Principais
+### 5.2 Bibliotecas utilizadas e justificativas
 
-- **Backend:**
-  - `spring-boot-starter-web` & `spring-boot-starter-validation`: Criação de API REST com validação declarativa de DTOs (`@NotNull`, `@Size`, `@Min`, `@Max`).
-  - `spring-boot-starter-data-jpa` & `mysql-connector-j`: Mapeamento objeto-relacional com Hibernate e driver MySQL.
-  - `flyway-core` & `flyway-mysql`: Controle de versão e migrações idempotentes de banco de dados.
-  - `springdoc-openapi-starter-webmvc-ui`: Geração automática da documentação Swagger OpenAPI 3.
-  - `spring-boot-starter-test`: Testes unitários e de integração com JUnit 5, AssertJ e Mockito.
-- **Frontend:**
-  - `react` (v19) & `react-dom`: Biblioteca declarativa para renderização de componentes reativos.
-  - `react-router-dom` (v7): Gerenciamento de rotas e navegação client-side.
-  - `lucide-react`: Ícones vetoriais consistentes e acessíveis.
-  - `vite`: Bundler e servidor de desenvolvimento ultra-otimizado.
-  - `vitest` & `@testing-library/react`: Testes de comportamento e acessibilidade.
-  - `eslint` & `prettier`: Garantia de conformidade com padrões de código limpo.
+#### Backend (`backend/pom.xml`)
+- **`spring-boot-starter-web` (Spring Boot 3.5.6):** Construção da API REST com Spring MVC, Tomcat embutido e serialização JSON padronizada em `snake_case`.
+- **`spring-boot-starter-validation`:** Validação declarativa dos payloads e parâmetros nos DTOs (`@NotNull`, `@Size`, `@Min`, `@Max`).
+- **`spring-boot-starter-data-jpa`:** Persistência de dados com Hibernate/JPA, transações gerenciadas e repositórios padronizados.
+- **`flyway-core` & `flyway-mysql`:** Versionamento e execução automatizada de migrações SQL idempotentes no MySQL 8.0.
+- **`mysql-connector-j`:** Driver JDBC oficial do MySQL para conexão com o banco de dados.
+- **`lombok`:** Eliminação de código boilerplate de getters, setters e construtores nas entidades de persistência.
+- **`springdoc-openapi-starter-webmvc-ui` (v2.8.9):** Geração automática da documentação Swagger / OpenAPI 3.0 disponível em `/swagger-ui.html`.
+- **`spring-boot-starter-test`:** Suíte de testes unitários com JUnit 5 e Mockito para validação de serviços e utilitários.
 
----
-
-## 7. 💡 Decisões e premissas
-
-1. **Separação de Responsabilidades e Clean Architecture:**
-   - O backend é a única fonte da verdade para o cálculo de regras de negócio (arredondamentos a 2 casas, multas proporcionais de fidelidade, comissões de venda sobre lucro, resultado dos 6 duelos técnicos e desempates na tabela).
-   - O frontend consome os dados da API sem recálculos arbitrários, prevenindo divergências de centavos.
-2. **Resiliência e Tratamento de Not Found:**
-   - Na busca de jogadores ou clubes inexistentes, exibe-se um estado vazio amigável com botão direto para limpar a busca.
-   - Na tentativa de acessar um clube inexistente diretamente pela barra de URL (`/clubes/999`), a interface intercepta o erro 404 da API e renderiza uma página de erro dedicada com orientações e botões para voltar à lista ou à tela inicial.
-3. **Fidelidade ao Mockup de Interface:**
-   - A tela inicial (`/`) segue fielmente o mockup oficial do Figma nas variações W01 (com partidas) e W02 (sem partidas), com atalho de teclado (`Enter`) para início rápido.
-   - A tela de Detalhes da Partida (`/liga/jogos/:id`) reconstrói geometricamente a posição dos 10 jogadores escalados em um campo gramado com marcações táticas, crachá de gol ⚽, badge de condição física ⚡ e tabela detalhada dos 6 duelos técnicos.
-4. **Exportação CSV:** Segue estritamente a especificação da RN18 com separador `;`, cabeçalho oficial, valores com 2 casas decimais e vírgula, negativos com `-` e fuso horário de Brasília.
+#### Frontend (`frontend/package.json`)
+- **`react` & `react-dom` (v19.2.8):** Biblioteca reativa para construção declarativa de componentes e renderização na Web.
+- **`react-router-dom` (v7.18.4):** Roteamento client-side com navegação declarativa, rotas aninhadas e query parameters (`useSearchParams`).
+- **`lucide-react` (v1.59.0):** Conjunto consistente de ícones vetoriais leves sem dependência de fontes externas.
+- **`vite` (v8.3.0):** Bundler com Hot Module Replacement ultrarrápido e compilação otimizada para produção.
+- **`typescript` (~6.0.2):** Tipagem estática rigorosa baseada nos DTOs da API REST.
+- **`vitest` (v5.0.5) & `@testing-library/react` (v16.3.3):** Execução de testes de comportamento de componentes e utilitários sem modo watch.
+- **`eslint` (v10.10.0) & `prettier` (v3.9.10):** Análise estática e formatação padronizada de código.
 
 ---
 
-## 8. 📌 Funcionalidades não implementadas
+## 6. 💡 Decisões e premissas
 
-**Nenhuma.** Todos os requisitos funcionais da API (RN01 a RN21), funcionalidades obrigatórias do frontend (F01 a F14) e diferenciais técnicos (testes, Docker Compose, Swagger OpenAPI, logs padronizados, responsividade mobile 375 px, lint e formatação) foram 100% implementados e testados.
+1. **Separação Estrita de Camadas (Clean Architecture):** Nenhuma chamada HTTP é realizada diretamente de dentro de componentes de apresentação React; todas transitam pela camada `services/`.
+2. **Ponto Único da Verdade (Single Source of Truth):** Todas as 6 fórmulas de negócio (overall por posição, valor de mercado dinâmico, taxa de transferência de 5%, multa e dias de fidelidade, comissão progressiva de venda e resultado de duelos/partidas) são calculadas exclusivamente no backend. O frontend apenas consome os valores recebidos, eliminando divergências de arredondamento.
+3. **Consistência Transacional:** Operações que alteram caixas de clubes, transferem atletas e gravam auditorias ocorrem sob anotação `@Transactional`, garantindo atomicidade com rollback automático em caso de falha.
+4. **Valores Calculados Não Persistidos:** Nenhum valor derivado (overall, valor de mercado, valor do elenco, patrimônio líquido, pontuação e saldo) é gravado como coluna no banco de dados, sendo sempre apurados em tempo de execução.
+5. **Resiliência e Estados Visuais:** Tratamento dos 3 estados (carregamento, vazio e erro com retry) em todas as listagens. URLs inexistentes de clubes (`/clubes/999`) capturam o erro 404 da API e apresentam tela amigável para retorno.
+6. **Responsividade Mobile (375 px):** O layout adapta-se a telas móveis sem rolagem horizontal na janela principal, permitindo scroll horizontal interno controlado nas tabelas e no gramado tático.
+7. **Formatação Monetária e Temporal:** Moedas exibidas no padrão BRL (`R$ 0,00`) com vírgula decimal e datas manipuladas estritamente no fuso de Brasília (`-03:00`).
 
 ---
 
-## 9. 🤖 Uso de inteligência artificial
+## 7. 📌 Funcionalidades não implementadas
 
-Conforme exigência do item 8 de _Requisitos do README.md_ e das diretrizes do processo seletivo:
+**Nenhuma.** Todas as regras de negócio (RN01 a RN21), validações de entrada (V1 a V9), requisitos do roteiro de interface (F01 a F14) e diferenciais técnicos (testes unitários no backend e frontend, Swagger OpenAPI, Docker Compose, lint e formatação) foram implementados e validados.
+
+---
+
+## 8. 🤖 Uso de inteligência artificial
+
+Em conformidade com o item 8 de *Requisitos do README.md* e as diretrizes do regulamento:
 
 - **Ferramenta utilizada:** Google Gemini (Antigravity).
-- **Forma de utilização:** Atuação como assistente de desenvolvimento para aceleração na geração de massa de testes de unidade (Vitest / Testing Library / Mockito), diagramação e marcação CSS das linhas do gramado tático e redação técnica dos arquivos README. Toda a lógica de domínio, restrições do banco, tratamento de exceções e endpoints da API foram rigorosamente revisados e auditados quanto à conformidade com os requisitos oficiais do regulamento.
+- **Onde foi utilizada:** Estruturação de testes automatizados com JUnit 5 / Vitest, refinamento de layout CSS do gramado tático e redação técnica do README.
+- **Como e por que foi utilizada:** Utilizada como pair programmer para acelerar a cobertura de testes e checagem de casos de borda das validações.
+- **O que foi aceito, alterado ou descartado:** Toda a arquitetura do domínio, migrações SQL, isolamento de camadas, regras de negócio e tratamento de exceções foram projetados e validados rigorosamente em conformidade com o regulamento. Códigos de seed temporários e trechos redundantes foram descartados para manter a aplicação estritamente alinhada às exigências oficiais.
